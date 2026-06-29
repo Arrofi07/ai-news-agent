@@ -1,0 +1,73 @@
+# AI Intelligence Agent - Configuration
+# Phase 1+2 scope: collection sources only. LLM/newsletter sections are
+# placeholders for later phases but kept here so the schema is stable.
+
+schedule:
+  day: monday
+  hour: 8
+
+database:
+  path: "data/news.db"
+
+sources:
+  rss:
+    enabled: true
+    feeds:
+      - name: "OpenAI"
+        url: "https://openai.com/news/rss.xml"
+        category: "company"
+      - name: "Anthropic"
+        url: "https://www.anthropic.com/rss.xml"
+        category: "company"
+      - name: "Google DeepMind"
+        url: "https://deepmind.google/blog/rss.xml"
+        category: "company"
+      - name: "Hugging Face"
+        url: "https://huggingface.co/blog/feed.xml"
+        category: "company"
+      - name: "NVIDIA AI"
+        url: "https://blogs.nvidia.com/feed/"
+        category: "company"
+
+  arxiv:
+    enabled: true
+    categories:
+      - "cs.CL"   # Computation and Language (LLMs, NLP)
+      - "cs.AI"   # Artificial Intelligence
+      - "cs.LG"   # Machine Learning
+      - "cs.MA"   # Multi-Agent Systems (AI Agents)
+    max_results_per_category: 20
+
+  github_trending:
+    enabled: true
+    languages:
+      - "python"
+      - "jupyter-notebook"
+    since: "weekly"   # daily | weekly | monthly
+    max_repos: 25
+
+  reddit:
+    enabled: false  # Phase 1+2 does not implement this yet
+    subreddits:
+      - "MachineLearning"
+      - "LocalLLaMA"
+      - "Artificial"
+      - "LLMDevs"
+      - "DataEngineering"
+
+  hackernews:
+    enabled: false  # Phase 1+2 does not implement this yet
+
+collection:
+  request_timeout_seconds: 15
+  user_agent: "ai-news-agent/0.1 (personal intelligence newsletter; +https://github.com/yourname/ai-news-agent)"
+  max_retries: 2
+  retry_backoff_seconds: 2
+
+newsletter:
+  max_articles: 15
+
+llm:
+  provider: "gemini"
+  model: "gemini-2.5-flash"
+  # api key is read from the GEMINI_API_KEY environment variable, never stored here
