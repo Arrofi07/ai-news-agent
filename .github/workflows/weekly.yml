@@ -1,0 +1,77 @@
+# AI Intelligence Agent — Weekly Collection Workflow
+#
+# Runs every Monday at 08:00 UTC (matches config.yaml schedule).
+# Also runnable manually from the Actions tab via workflow_dispatch.
+#
+# Prerequisites: add GEMINI_API_KEY to your repo's Settings → Secrets and variables → Actions.
+# (Not needed for Phase 1+2 collection — only required in Phase 4 when LLM summarization is wired in.)
+
+name: Weekly AI News Collection
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"    # Every Monday 08:00 UTC
+  workflow_dispatch:         # Manual trigger from the Actions tab
+
+jobs:
+  collect:
+    name: Collect AI News
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # Needed to commit the generated DB / output back to the repo
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # Full history so we can push back cleanly
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run collection pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # Used in Phase 4+; safe to be empty for now
+        run: uv run main.py
+
+      - name: Commit and push outputs
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/news.db output/
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "chore: weekly collection run $(date -u +'%Y-%m-%d')"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run test suite
+        run: uv run python -m pytest tests/ -v
