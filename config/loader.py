@@ -29,6 +29,7 @@ class RSSFeedConfig:
 @dataclass
 class RSSConfig:
     enabled: bool = True
+    max_age_days: int = 7     # Articles older than this are skipped
     feeds: list[RSSFeedConfig] = field(default_factory=list)
 
 
@@ -117,6 +118,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
     rss_raw = sources.get("rss", {})
     rss = RSSConfig(
         enabled=rss_raw.get("enabled", True),
+        max_age_days=rss_raw.get("max_age_days", 7),
         feeds=[RSSFeedConfig(**feed) for feed in rss_raw.get("feeds", [])],
     )
 

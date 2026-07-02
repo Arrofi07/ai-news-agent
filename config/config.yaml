@@ -1,6 +1,4 @@
 # AI Intelligence Agent - Configuration
-# Phase 1+2 scope: collection sources only. LLM/newsletter sections are
-# placeholders for later phases but kept here so the schema is stable.
 
 schedule:
   day: monday
@@ -12,12 +10,15 @@ database:
 sources:
   rss:
     enabled: true
+    max_age_days: 7    # Skip articles older than this — prevents ingesting entire feed archives
     feeds:
       - name: "OpenAI"
         url: "https://openai.com/news/rss.xml"
         category: "company"
       - name: "Anthropic"
-        url: "https://www.anthropic.com/rss.xml"
+        # Anthropic has no official RSS feed. This is a community-maintained
+        # mirror (GitHub Actions scrapes anthropic.com/news daily).
+        url: "https://raw.githubusercontent.com/taobojlen/anthropic-rss-feed/main/anthropic_news_rss.xml"
         category: "company"
       - name: "Google DeepMind"
         url: "https://deepmind.google/blog/rss.xml"
@@ -47,16 +48,9 @@ sources:
     max_repos: 25
 
   reddit:
-    enabled: false  # Phase 1+2 does not implement this yet
-    subreddits:
-      - "MachineLearning"
-      - "LocalLLaMA"
-      - "Artificial"
-      - "LLMDevs"
-      - "DataEngineering"
-
+    enabled: false  # Phase 3+
   hackernews:
-    enabled: false  # Phase 1+2 does not implement this yet
+    enabled: false  # Phase 3+
 
 collection:
   request_timeout_seconds: 15

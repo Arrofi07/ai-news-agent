@@ -12,10 +12,16 @@ Run `uv sync` locally to get feedparser and always use the better path.
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from xml.etree import ElementTree as ET
 
 import requests
+
+try:
+    from dateutil import parser as dateutil_parser
+    _HAS_DATEUTIL = True
+except ImportError:
+    _HAS_DATEUTIL = False
 
 from collector.base import BaseCollector
 from database.models import Article
@@ -159,14 +165,60 @@ class RSSCollector(BaseCollector):
         if not title or not link:
             return None
 
+        # Parse and normalize the published date.
+        published_str = entry.get("published")
+        published_dt: datetime | None = None
+        if published_str:
+            published_dt = _parse_date(published_str)
+
+        # Age filter: skip articles older than max_age_days.
+        # Articles with no date at all are always kept (we can't know their age).
+        max_age = self.config.rss.max_age_days
+        if published_dt and max_age:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=max_age)
+            if published_dt < cutoff:
+                return None
+
+        published_at = published_dt.isoformat() if published_dt else published_str
+
         return Article(
             title=title,
             url=link,
             source=feed_cfg.name,
             source_type=self.source_type,
             author=entry.get("author"),
-            published_at=entry.get("published"),
-            content=entry.get("summary", "")[:5000],  # cap raw content; full cleaning happens in processing/
+            published_at=published_at,
+            content=entry.get("summary", "")[:5000],
             category=feed_cfg.category,
             tags=[feed_cfg.category],
         )
+
+
+def _parse_date(date_str: str) -> datetime | None:
+    """Parse a date string from an RSS/Atom feed into a timezone-aware datetime.
+
+    RSS feeds use many date formats (RFC 2822, ISO 8601, custom). We try
+    dateutil first (handles almost everything), then fall back to a few
+    manual patterns for common formats dateutil might miss.
+    """
+    if not date_str:
+        return None
+    if _HAS_DATEUTIL:
+        try:
+            dt = dateutil_parser.parse(date_str)
+            # Make timezone-aware (assume UTC if naive)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except (ValueError, OverflowError):
+            return None
+    # Stdlib fallback — handles the two most common patterns
+    for fmt in ("%a, %d %b %Y %H:%M:%S %z", "%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ"):
+        try:
+            dt = datetime.strptime(date_str.strip(), fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except ValueError:
+            continue
+    return None
