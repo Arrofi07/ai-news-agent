@@ -68,13 +68,18 @@ def clean_url(url: str | None) -> str:
 
 
 def clean_title(title: str | None) -> str:
-    """Normalize a title: decode HTML entities, collapse whitespace, strip trailing source names."""
+    """Normalize a title: strip HTML tags, decode entities, collapse whitespace,
+    strip trailing ' | Source Name' style suffixes."""
     if not title:
         return ""
+    # Strip HTML first — some RSS feeds embed <b>, <em> etc. in titles
+    title = _strip_html(title)
     title = html.unescape(title)
     title = _normalize_unicode(title)
-    # Some feeds append "| Source Name" or "- Source Name" to titles.
-    title = re.sub(r"\s*[\|–—-]\s*\w[\w\s]{2,40}$", "", title).strip()
+    # Remove trailing "| Source Name" or "- Source Name" suffixes.
+    # The pattern requires at least one space before the separator to avoid
+    # cutting into hyphenated product names like "GPT-X" or "Claude-3.5".
+    title = re.sub(r"\s+[\|–—]\s+\w[\w\s]{2,40}$", "", title).strip()
     return _normalize_whitespace(title)
 
 

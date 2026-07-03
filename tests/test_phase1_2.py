@@ -22,23 +22,34 @@ from unittest.mock import MagicMock, patch
 
 # ── fixtures ────────────────────────────────────────────────────────────────
 
-RSS_2_FIXTURE = b"""<?xml version="1.0" encoding="UTF-8"?>
+from datetime import datetime, timezone, timedelta
+
+def _recent_rfc2822() -> str:
+    """Return a date 1 day ago in RFC 2822 format (what RSS feeds use)."""
+    dt = datetime.now(timezone.utc) - timedelta(days=1)
+    return dt.strftime("%a, %d %b %Y %H:%M:%S +0000")
+
+def _make_rss_fixture() -> bytes:
+    date = _recent_rfc2822()
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>
   <title>Test Feed</title>
   <item>
     <title>GPT-X Released</title>
     <link>https://openai.com/blog/gpt-x</link>
     <author>OpenAI</author>
-    <pubDate>Thu, 25 Jun 2026 10:00:00 GMT</pubDate>
+    <pubDate>{date}</pubDate>
     <description>Our most capable model yet.</description>
   </item>
   <item>
     <title>Safety Research Update</title>
     <link>https://openai.com/blog/safety-june-2026</link>
-    <pubDate>Mon, 22 Jun 2026 09:00:00 GMT</pubDate>
+    <pubDate>{date}</pubDate>
     <description>Latest safety work.</description>
   </item>
-</channel></rss>"""
+</channel></rss>""".encode()
+
+RSS_2_FIXTURE = _make_rss_fixture()
 
 ATOM_FIXTURE = b"""<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
