@@ -1,14 +1,21 @@
 """
-Entry point for the AI Intelligence Agent.
+AI Intelligence Agent — main entry point.
 
-Phase 1+2: collection (RSS, arXiv, GitHub Trending)
-Phase 3:   processing (clean, dedup, classify, rank)
-Phase 4+:  LLM summarization and newsletter generation (coming soon)
+Full pipeline:
+  Phase 1+2  Collect  (RSS, arXiv, GitHub Trending)
+  Phase 3    Process  (clean, dedup, classify, rank)
+  Phase 4    Summarize (Gemini 2.5 Flash)
+  Phase 5    Publish  (Markdown + HTML newsletter)
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from config.loader import load_config
+from llm.summarize import run_summarization
+from newsletter.html import build_html
+from newsletter.markdown import build_markdown
 from processing.pipeline import run_processing
 from scheduler.logging_setup import get_logger
 from scheduler.weekly import run_collection
@@ -16,58 +23,62 @@ from scheduler.weekly import run_collection
 logger = get_logger(__name__)
 
 
+def _week_label() -> str:
+    now = datetime.now(timezone.utc)
+    week_num = now.isocalendar()[1]
+    return f"Week {week_num} - {now.year}"
+
+
 def main() -> None:
     config = load_config()
+    week_label = _week_label()
+    logger.info("=== AI INTELLIGENCE AGENT — %s ===", week_label)
 
     # ── Phase 1+2: Collect ──────────────────────────────────────────────
-    logger.info("=== COLLECTION ===")
+    logger.info("--- PHASE 1+2: COLLECTION ---")
     collection_summary = run_collection(config)
-
-    total_found = sum(s.get("found", 0) for s in collection_summary.values())
     total_new = sum(s.get("new", 0) for s in collection_summary.values())
-    for source_type, stats in collection_summary.items():
+    total_found = sum(s.get("found", 0) for s in collection_summary.values())
+    for source, stats in collection_summary.items():
         logger.info("  %-16s found=%-4d new=%-4d status=%s",
-                    source_type, stats.get("found", 0),
-                    stats.get("new", 0), stats.get("status"))
-    logger.info("Collection total: %d found, %d new.", total_found, total_new)
+                    source, stats["found"], stats["new"], stats["status"])
+    logger.info("Collection: %d found, %d new.", total_found, total_new)
 
     # ── Phase 3: Process ────────────────────────────────────────────────
-    logger.info("=== PROCESSING ===")
-    processing_summary = run_processing(config.database.path)
-    logger.info(
-        "Processing done: cleaned=%d | dedup_groups=%d | classified=%d | ranked=%d",
-        processing_summary["cleaned"],
-        processing_summary["dedup"]["groups_found"],
-        processing_summary["classified"],
-        processing_summary["ranked"],
+    logger.info("--- PHASE 3: PROCESSING ---")
+    proc = run_processing(config.database.path)
+    logger.info("Processing: cleaned=%d | dedup_groups=%d | classified=%d | ranked=%d",
+                proc["cleaned"], proc["dedup"]["groups_found"],
+                proc["classified"], proc["ranked"])
+
+    # ── Phase 4: Summarize ──────────────────────────────────────────────
+    logger.info("--- PHASE 4: SUMMARIZATION ---")
+    grouped = run_summarization(config)
+    total_articles = sum(len(v) for v in grouped.values())
+    logger.info("Summarized %d articles across %d sections.", total_articles, len(grouped))
+
+    # ── Phase 5: Newsletter ─────────────────────────────────────────────
+    logger.info("--- PHASE 5: NEWSLETTER ---")
+    llm_client = None
+    if config.llm.api_key:
+        from llm.gemini import GeminiClient
+        llm_client = GeminiClient(config.llm.api_key, config.llm.model)
+
+    markdown = build_markdown(
+        grouped=grouped,
+        week_label=week_label,
+        llm_client=llm_client,
+        output_dir="output",
+    )
+    build_html(
+        markdown_content=markdown,
+        grouped=grouped,
+        week_label=week_label,
+        output_dir="output",
     )
 
-    # ── Preview: top 10 articles by importance ──────────────────────────
-    _print_top_articles(config.database.path, n=10)
+    logger.info("=== DONE. Check output/ for your newsletter. ===")
 
-
-def _print_top_articles(db_path: str, n: int = 10) -> None:
-    """Print the top-ranked articles so you can visually verify ranking quality."""
-    from database.database import db_session
-    with db_session(db_path) as conn:
-        rows = conn.execute(
-            """
-            SELECT title, source, category, importance
-            FROM articles
-            WHERE importance > 0
-            ORDER BY importance DESC
-            LIMIT ?
-            """,
-            (n,),
-        ).fetchall()
-
-    logger.info("=== TOP %d ARTICLES BY IMPORTANCE ===", n)
-    for i, row in enumerate(rows, 1):
-        logger.info(
-            "  %2d. [%5.1f] [%-16s] [%-14s] %s",
-            i, row["importance"], row["source"][:16],
-            row["category"][:14], row["title"][:70],
-        )
 
 if __name__ == "__main__":
     main()
