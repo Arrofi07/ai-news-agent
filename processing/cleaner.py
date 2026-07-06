@@ -88,6 +88,14 @@ def clean_title(title: str | None) -> str:
 def _strip_html(text: str) -> str:
     """Remove HTML tags. Uses BeautifulSoup for robustness on malformed HTML."""
     try:
+        if not text:
+            return ""
+
+        text = str(text).strip()
+
+        if "<" not in text:
+            return html.unescape(text)
+
         soup = BeautifulSoup(text, "lxml")
         # Replace <br> and <p> with newlines before extracting text
         for tag in soup.find_all(["br", "p", "div", "li", "h1", "h2", "h3", "h4"]):
