@@ -266,6 +266,57 @@ class TestSummarizationRunner(unittest.TestCase):
         self.assertNotIn("dup1", ids)
         self.assertIn("ok1", ids)
 
+    def test_select_top_stories_excludes_already_featured(self):
+        """An article already shipped in a past newsletter must not be
+        re-selected, even if its importance score is still high (this is
+        the fix for old articles resurfacing after freshness decay)."""
+        from llm.summarize import _select_top_stories
+        from database.database import init_db, db_session
+        path = tempfile.mktemp(suffix=".db")
+        self.tmp_dbs.append(path)
+        init_db(path)
+        now = datetime.now(timezone.utc).isoformat()
+        with db_session(path) as conn:
+            conn.execute(
+                "INSERT INTO articles (id,title,url,source,source_type,content,"
+                "published_at,category,tags,importance,extra,featured_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("old1", "Old high scorer", "https://old.com/a", "OpenAI", "rss",
+                 "C", now, "general", "", 95.0, "{}", now)  # already featured
+            )
+            conn.execute(
+                "INSERT INTO articles (id,title,url,source,source_type,content,"
+                "published_at,category,tags,importance,extra,featured_at) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                ("new1", "Fresh article", "https://new.com/a", "OpenAI", "rss",
+                 "C", now, "general", "", 60.0, "{}", None)  # never featured
+            )
+        results = _select_top_stories(path, 10)
+        ids = [r["id"] for r in results]
+        self.assertNotIn("old1", ids, "already-featured article should be excluded")
+        self.assertIn("new1", ids)
+
+    def test_mark_articles_featured_stamps_all_selected_ids(self):
+        from llm.summarize import mark_articles_featured
+        from database.database import db_session
+        path = self._make_db()
+        grouped = {
+            "top_stories": [{"id": "rss1"}, {"id": "rss2"}],
+            "github": [{"id": "gh1"}],
+        }
+        mark_articles_featured(path, grouped)
+        with db_session(path) as conn:
+            rows = conn.execute(
+                "SELECT id, featured_at FROM articles WHERE id IN ('rss1','rss2','gh1')"
+            ).fetchall()
+            for row in rows:
+                self.assertIsNotNone(row["featured_at"], f"{row['id']} should be marked featured")
+            # An article not in `grouped` (arx1) should be untouched
+            untouched = conn.execute(
+                "SELECT featured_at FROM articles WHERE id = 'arx1'"
+            ).fetchone()
+            self.assertIsNone(untouched["featured_at"])
+
 
 # ── markdown newsletter tests ─────────────────────────────────────────────────
 
@@ -315,12 +366,42 @@ class TestMarkdownNewsletter(unittest.TestCase):
     def test_build_markdown_with_llm_client_uses_llm_output(self):
         from newsletter.markdown import build_markdown
         mock_llm = MagicMock()
-        mock_llm.generate_text.return_value = "# AI Weekly\n\nLLM-generated content here."
+        # Must be long enough and mention every article's URL to pass
+        # _validate_newsletter — a short/incomplete mock (as this test used
+        # to have) is exactly the kind of broken response we now reject.
+        mock_llm.generate_text.return_value = (
+            "# AI Weekly\n\n"
+            "OpenAI released GPT-X this week, a model with major reasoning gains. "
+            "Read more: https://openai.com/a\n\n"
+            "Anthropic also launched Claude 4, now generally available. "
+            "See: https://anthropic.com/b\n\n"
+            "On the research side, a new paper on scaling laws for multi-agent "
+            "systems is worth a read: https://arxiv.org/abs/123\n\n"
+            "LangGraph 2.0 shipped with a cleaner orchestration API: "
+            "https://langgraph.com/a\n\n"
+            "Trending on GitHub: owner/awesome-llm-agent "
+            "(https://github.com/owner/awesome-llm-agent) and owner/vector-db "
+            "(https://github.com/owner/vector-db) both picked up serious stars."
+        )
         grouped = _sample_grouped()
         md = build_markdown(grouped, "Week 27 - 2026",
                             llm_client=mock_llm, output_dir=self.tmp_dir)
-        self.assertIn("LLM-generated content here", md)
+        self.assertIn("OpenAI released GPT-X", md)
         mock_llm.generate_text.assert_called_once()
+
+    def test_build_markdown_rejects_truncated_llm_output(self):
+        """A short/incomplete LLM response must fall back to the template
+        instead of being written to disk as-is (the original bug)."""
+        from newsletter.markdown import build_markdown
+        mock_llm = MagicMock()
+        mock_llm.generate_text.return_value = "# AI Weekly Intelligence Report\n\n### LeRobot v0.6"
+        grouped = _sample_grouped()
+        md = build_markdown(grouped, "Week 27 - 2026",
+                            llm_client=mock_llm, output_dir=self.tmp_dir)
+        # Should have fallen back to the template, which always includes
+        # every article's URL and the reading-time footer.
+        self.assertIn("_Estimated reading time", md)
+        self.assertIn("https://openai.com/a", md)
 
     def test_build_markdown_falls_back_to_template_if_llm_returns_empty(self):
         from newsletter.markdown import build_markdown

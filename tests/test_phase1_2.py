@@ -226,6 +226,43 @@ class TestDatabase(unittest.TestCase):
         extra = json.loads(row["extra"])
         self.assertEqual(extra["stars_today"], 312)
 
+    def test_featured_at_column_exists_on_fresh_db(self):
+        from database.database import init_db, get_connection
+        init_db(self.tmp)
+        conn = get_connection(self.tmp)
+        columns = {r["name"] for r in conn.execute("PRAGMA table_info(articles)")}
+        conn.close()
+        self.assertIn("featured_at", columns)
+
+    def test_migration_adds_featured_at_to_pre_existing_db(self):
+        """Simulates a news.db created before featured_at existed (e.g. one
+        already committed to the repo) — init_db must add the column via
+        ALTER TABLE rather than silently no-op because the table already
+        exists."""
+        import sqlite3
+        # Build a DB with the *old* schema shape, missing featured_at, bypassing
+        # init_db entirely so we control exactly what "pre-migration" means.
+        conn = sqlite3.connect(self.tmp)
+        conn.execute(
+            """CREATE TABLE articles (
+                id TEXT PRIMARY KEY, title TEXT NOT NULL, url TEXT NOT NULL UNIQUE,
+                source TEXT NOT NULL, source_type TEXT NOT NULL, author TEXT,
+                published_at TEXT, content TEXT, summary TEXT, category TEXT,
+                tags TEXT, importance REAL DEFAULT 0, embedding BLOB, extra TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )"""
+        )
+        conn.commit()
+        conn.close()
+
+        from database.database import init_db, get_connection
+        init_db(self.tmp)  # should migrate, not raise
+        conn = get_connection(self.tmp)
+        columns = {r["name"] for r in conn.execute("PRAGMA table_info(articles)")}
+        conn.close()
+        self.assertIn("featured_at", columns)
+
     def test_tags_stored_as_comma_string(self):
         from database.database import init_db, db_session, get_connection
         from database.models import Article, upsert_article
