@@ -125,6 +125,7 @@ def _select_top_stories(db_path: str, limit: int) -> list[dict]:
             FROM articles
             WHERE importance > 0
               AND source_type = 'rss'
+              AND featured_at IS NULL
             ORDER BY importance DESC
             LIMIT ?
             """,
@@ -143,6 +144,7 @@ def _select_by_source_type(db_path: str, source_type: str, limit: int) -> list[d
             FROM articles
             WHERE importance > 0
               AND source_type = ?
+              AND featured_at IS NULL
             ORDER BY importance DESC
             LIMIT ?
             """,
@@ -164,12 +166,39 @@ def _select_tools(db_path: str, limit: int) -> list[dict]:
                    OR tags LIKE '%open_source%'
                    OR tags LIKE '%python%')
               AND source_type != 'github_trending'
+              AND featured_at IS NULL
             ORDER BY importance DESC
             LIMIT ?
             """,
             (limit,),
         ).fetchall()
     return [_row_to_dict(r) for r in rows]
+
+
+def mark_articles_featured(db_path: str, grouped: dict[str, list[dict]]) -> None:
+    """
+    Stamp every article that went into this week's newsletter with
+    featured_at = now, so future runs never re-select it (see the
+    featured_at IS NULL filter in the selection queries above).
+
+    Deliberately called by the caller (main.py) only *after* build_markdown /
+    build_html have both succeeded — if we marked articles featured before
+    confirming the newsletter was actually produced, a crash mid-pipeline
+    could permanently "burn" articles that were never actually sent anywhere.
+    """
+    article_ids = [a["id"] for articles in grouped.values() for a in articles if a.get("id")]
+    if not article_ids:
+        return
+
+    with db_session(db_path) as conn:
+        # executemany over a list of 1-tuples — sqlite3 has no clean "IN (...)"
+        # with a variable-length list, and this table only sees a few dozen
+        # updates a week so a loop is simpler than building a dynamic query.
+        conn.executemany(
+            "UPDATE articles SET featured_at = datetime('now') WHERE id = ?",
+            [(aid,) for aid in article_ids],
+        )
+    logger.info("Marked %d articles as featured (won't be re-selected in future runs).", len(article_ids))
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS articles (
     importance      REAL DEFAULT 0,        -- assigned in Phase 3 ranking
     embedding       BLOB,                  -- reserved for future similarity work
     extra           TEXT,                  -- JSON blob for source-specific fields (stars, citations, etc.)
+    featured_at     TEXT,                  -- ISO 8601, set once this article ships in a newsletter
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -73,9 +74,23 @@ def init_db(db_path: str | Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(SCHEMA)
+        _migrate_add_featured_at(conn)
         conn.commit()
     finally:
         conn.close()
+
+
+def _migrate_add_featured_at(conn: sqlite3.Connection) -> None:
+    """
+    One-off migration for DBs created before featured_at existed (e.g. a
+    news.db already committed to the repo from an earlier run). Checks
+    pragma table_info rather than just try/except-ing the ALTER TABLE, so
+    running this repeatedly is a cheap no-op instead of relying on catching
+    a "duplicate column" error every single time init_db runs.
+    """
+    existing_columns = {row["name"] for row in conn.execute("PRAGMA table_info(articles)")}
+    if "featured_at" not in existing_columns:
+        conn.execute("ALTER TABLE articles ADD COLUMN featured_at TEXT")
 
 
 @contextmanager

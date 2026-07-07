@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from config.loader import load_config
-from llm.summarize import run_summarization
+from llm.summarize import mark_articles_featured, run_summarization
 from newsletter.html import build_html
 from newsletter.markdown import build_markdown
 from processing.pipeline import run_processing
@@ -76,6 +76,11 @@ def main() -> None:
         week_label=week_label,
         output_dir="output",
     )
+
+    # Both files are written at this point — safe to stamp these articles as
+    # "already sent" so next week's selection queries skip them, regardless
+    # of how high their importance score still is. See llm/summarize.py.
+    mark_articles_featured(config.database.path, grouped)
 
     logger.info("=== DONE. Check output/ for your newsletter. ===")
 
