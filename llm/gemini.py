@@ -54,36 +54,68 @@ class GeminiClient:
         """
         prompt = article_summary_prompt(title, source, content)
         try:
-            raw = self._call(prompt)
-            result = _parse_json_response(raw)
-            if result:
-                return result
+            raw, truncated = self._call(prompt)
+            if truncated:
+                # A cut-off JSON blob will usually fail to parse anyway, but
+                # don't even try — go straight to the rule-based fallback.
+                logger.warning("Gemini summary truncated for '%s'", title[:60])
+            else:
+                result = _parse_json_response(raw)
+                if result:
+                    return result
         except Exception as e:
             logger.warning("Gemini summarization failed for '%s': %s", title[:60], e)
 
         return _fallback_summary(title, content)
 
-    def generate_text(self, prompt: str) -> str:
+    def generate_text(self, prompt: str, max_output_tokens: int = 4096) -> str:
         """
         General-purpose text generation (used for newsletter assembly).
         Returns empty string on failure — callers must handle this.
+
+        max_output_tokens defaults to 4096 here (vs. 1024 for summarize_article)
+        because the newsletter prompt asks the model to write ~15 full article
+        blurbs plus headers/takeaways in one response. 1024 was the original
+        bug: Gemini silently truncated mid-sentence and the truncated text
+        still got written to disk as the "final" newsletter. Callers that
+        expect a short response can still pass a smaller value explicitly.
         """
         try:
-            return self._call(prompt)
+            text, truncated = self._call(prompt, max_output_tokens=max_output_tokens)
+            if truncated:
+                # Gemini itself told us (via finishReason=MAX_TOKENS) that this
+                # response was cut off — even a *higher* budget can still run
+                # out for an unusually large batch of articles. Treat this the
+                # same as an API failure so the caller falls back to the
+                # template instead of shipping a half-written newsletter.
+                logger.warning(
+                    "Gemini response truncated (hit maxOutputTokens=%d) — "
+                    "discarding partial output.", max_output_tokens
+                )
+                return ""
+            return text
         except Exception as e:
             logger.warning("Gemini generate_text failed: %s", e)
             return ""
 
     # ── private ────────────────────────────────────────────────────────────
 
-    def _call(self, prompt: str, max_retries: int = 3) -> str:
-        """Make a Gemini API call with exponential backoff on rate limit errors."""
+    def _call(
+        self, prompt: str, max_retries: int = 3, max_output_tokens: int = 1024
+    ) -> tuple[str, bool]:
+        """Make a Gemini API call with exponential backoff on rate limit errors.
+
+        Returns (text, was_truncated). was_truncated is True when Gemini's own
+        finishReason says the response was cut off by the token budget, so
+        callers can decide whether a truncated response is acceptable instead
+        of us silently returning partial text as if it were complete.
+        """
         url = GEMINI_API_URL.format(model=self.model, api_key=self.api_key)
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": 0.3,        # Low temp for factual summaries
-                "maxOutputTokens": 1024,
+                "maxOutputTokens": max_output_tokens,
             },
         }
 
@@ -101,7 +133,7 @@ class GeminiClient:
 
                 resp.raise_for_status()
                 data = resp.json()
-                return _extract_text(data)
+                return _extract_text(data), _is_truncated(data)
 
             except requests.exceptions.Timeout:
                 logger.warning("Gemini API timeout (attempt %d/%d)", attempt + 1, max_retries)
@@ -123,6 +155,21 @@ def _extract_text(response_data: dict) -> str:
         return response_data["candidates"][0]["content"]["parts"][0]["text"]
     except (KeyError, IndexError) as e:
         raise ValueError(f"Unexpected Gemini response shape: {e}") from e
+
+
+def _is_truncated(response_data: dict) -> bool:
+    """
+    Check Gemini's own finishReason for the candidate. This is the authoritative
+    signal that a response was cut off by maxOutputTokens — much more reliable
+    than trying to guess truncation from the text itself (e.g. "does it end
+    mid-word?"), and it's what actually caused the empty/broken newsletter bug.
+    Missing/unexpected shape is treated as "not truncated" (fail open) since
+    _extract_text will already have raised on a genuinely malformed response.
+    """
+    try:
+        return response_data["candidates"][0].get("finishReason") == "MAX_TOKENS"
+    except (KeyError, IndexError):
+        return False
 
 
 def _parse_json_response(text: str) -> dict | None:

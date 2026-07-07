@@ -43,10 +43,17 @@ def build_markdown(
     """
     if llm_client:
         markdown = _build_with_llm(grouped, week_label, llm_client)
-        if markdown:
+        ok, reason = _validate_newsletter(markdown, grouped)
+        if ok:
             logger.info("Newsletter built using LLM.")
         else:
-            logger.warning("LLM newsletter generation returned empty — falling back to template.")
+            # Never ship an LLM response we haven't checked — an empty string
+            # (API failure / truncation already caught in gemini.py), a
+            # too-short response, or one that's missing articles the model
+            # was given all fail here and fall back to the template, which
+            # is built directly from our own structured data and can't drop
+            # or hallucinate anything.
+            logger.warning("LLM newsletter failed validation (%s) — falling back to template.", reason)
             markdown = _build_from_template(grouped, week_label)
     else:
         markdown = _build_from_template(grouped, week_label)
@@ -74,6 +81,51 @@ def _build_with_llm(grouped: dict, week_label: str, llm_client) -> str:
         github_repos=grouped.get("github", []),
     )
     return llm_client.generate_text(prompt)
+
+
+def _validate_newsletter(markdown: str, grouped: dict[str, list[dict]]) -> tuple[bool, str]:
+    """
+    Sanity-check an LLM-generated newsletter before we accept it as final output.
+
+    This is deliberately cheap and structural (not another LLM call) — it just
+    checks that the response looks like a complete newsletter that actually
+    covers the articles we gave it. Returns (is_valid, reason_if_invalid).
+    """
+    if not markdown or not markdown.strip():
+        return False, "empty response"
+
+    all_articles = [a for articles in grouped.values() for a in articles]
+    if not all_articles:
+        # Nothing to check against (shouldn't normally happen — the pipeline
+        # only calls build_markdown when there's at least something to send).
+        return True, ""
+
+    # 1) Length sanity check. A real newsletter needs at least a short
+    #    paragraph per article; ~40 chars/article is a deliberately low floor
+    #    (just enough to catch "got cut off after one bullet") rather than a
+    #    strict word-count target.
+    min_expected_chars = 40 * len(all_articles)
+    if len(markdown) < min_expected_chars:
+        return False, f"too short ({len(markdown)} chars for {len(all_articles)} articles)"
+
+    # 2) Doesn't look like it stops mid-sentence. A genuinely complete
+    #    response should end on punctuation, a closing markdown character, or
+    #    whitespace — not mid-word. This is a backup for the finishReason
+    #    check in gemini.py, in case a response is truncated by something
+    #    other than the token budget (e.g. the model itself stopping early).
+    tail = markdown.strip()[-1:]
+    if tail and tail.isalnum():
+        return False, "response appears to end mid-sentence"
+
+    # 3) Grounding/completeness check: every article's URL should appear
+    #    somewhere in the output. If the model dropped an article (or the
+    #    response got cut off before reaching it), the missing URL(s) show up
+    #    here even though checks 1 and 2 might pass by coincidence.
+    missing = [a.get("url", "") for a in all_articles if a.get("url") and a["url"] not in markdown]
+    if missing:
+        return False, f"{len(missing)} article URL(s) missing from output"
+
+    return True, ""
 
 
 # ── Template mode ─────────────────────────────────────────────────────────────
