@@ -2,18 +2,20 @@
 AI Intelligence Agent — main entry point.
 
 Full pipeline:
-  Phase 1+2  Collect  (RSS, arXiv, GitHub Trending)
-  Phase 3    Process  (clean, dedup, classify, rank)
+  Phase 1+2  Collect   (RSS, arXiv, GitHub Trending)
+  Phase 3    Process   (clean, dedup, classify, rank)
   Phase 4    Summarize (Gemini 2.5 Flash)
-  Phase 5    Publish  (Markdown + HTML newsletter)
+  Phase 5    Publish   (Markdown + HTML newsletter + email delivery)
 """
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 
 from config.loader import load_config
-from llm.summarize import mark_articles_featured, run_summarization
+from llm.summarize import run_summarization
+from newsletter.email import send_newsletter
 from newsletter.html import build_html
 from newsletter.markdown import build_markdown
 from processing.pipeline import run_processing
@@ -70,17 +72,32 @@ def main() -> None:
         llm_client=llm_client,
         output_dir="output",
     )
-    build_html(
+    html = build_html(
         markdown_content=markdown,
         grouped=grouped,
         week_label=week_label,
         output_dir="output",
     )
 
-    # Both files are written at this point — safe to stamp these articles as
-    # "already sent" so next week's selection queries skip them, regardless
-    # of how high their importance score still is. See llm/summarize.py.
-    mark_articles_featured(config.database.path, grouped)
+    # ── Email delivery ──────────────────────────────────────────────────
+    resend_api_key = os.environ.get("RESEND_API_KEY")
+    resend_to = os.environ.get("RESEND_TO_EMAIL")
+
+    if resend_api_key and resend_to:
+        logger.info("--- EMAIL DELIVERY ---")
+        success = send_newsletter(
+            html_content=html,
+            markdown_content=markdown,
+            week_label=week_label,
+            api_key=resend_api_key,
+            to_email=resend_to,
+        )
+        if success:
+            logger.info("Newsletter delivered to %s", resend_to)
+        else:
+            logger.warning("Email delivery failed — check logs above. Newsletter still in output/.")
+    else:
+        logger.info("Email delivery skipped (RESEND_API_KEY or RESEND_TO_EMAIL not set).")
 
     logger.info("=== DONE. Check output/ for your newsletter. ===")
 
