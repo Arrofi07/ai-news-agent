@@ -287,37 +287,6 @@ newsletter:
 llm:
   model: "gemini-2.5-flash"
 ```
-
----
-
-## Known Limitations
-
-These are documented tradeoffs, not oversights:
-
-| Limitation | Impact | Planned fix |
-|---|---|---|
-| Jaccard dedup is title-only | Stories with different titles but same content are not grouped | Embedding-based semantic dedup (v2) |
-| Ranking weights are hand-tuned | No feedback loop to validate quality | Collect implicit feedback signals (v2) |
-| No schema migration system | DB schema changes require manual intervention | Versioned migration files (v2) |
-| Gmail strips some CSS | `linear-gradient` and `box-shadow` don't render in Gmail | Email-specific CSS template (v2) |
-
----
-
-## Roadmap
-
-| Version | Feature | Status |
-|---|---|---|
-| v1.0 | Core pipeline: collect → process → summarize → deliver | ✅ Complete |
-| v2.0 | Reddit + HackerNews collectors | 🔜 Planned |
-| v2.0 | Embedding-based semantic deduplication | 🔜 Planned |
-| v2.0 | Importance ranking feedback loop | 🔜 Planned |
-| v2.0 | Email-client tested HTML template | 🔜 Planned |
-| v3.0 | Personalization — topic weighting by interest | 🔜 Planned |
-| v3.0 | Per-article learning resources ("what to study next") | 🔜 Planned |
-| v3.0 | Telegram delivery option | 🔜 Planned |
-| v4.0 | Knowledge base — semantic search over all collected articles | 🔜 Planned |
-| v5.0 | Auto-generated weekly voice podcast | 🔜 Planned |
-
 ---
 
 ## Design Decisions
