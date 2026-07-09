@@ -6,134 +6,134 @@
 
 ## 🔥 Top Stories
 
-### [Our approach to government and national security partnerships](https://openai.com/index/government-national-security-partnerships)
-**Source:** OpenAI · **Score:** 70/100
+### [MUFG aims to become AI-native with OpenAI](https://openai.com/index/mufg)
+**Source:** OpenAI · **Score:** 63/100
 
-OpenAI has outlined its principles for engaging in partnerships with government and national security organizations. These guidelines emphasize responsible AI use, democratic accountability, and public safety in the deployment of their advanced AI technologies within these critical sectors.
+MUFG is adopting ChatGPT Enterprise to transform into an AI-native organization. This initiative aims to significantly improve internal workflows and enable the scalable delivery of new AI-powered financial services.
 
-> **Why it matters:** This development underscores the growing importance of ethical AI deployment and robust governance for AI/Data engineers, particularly those involved in high-stakes public sector projects. It necessitates a deeper focus on explainability, data privacy, and MLOps practices to ensure compliance and mitigate risks in sensitive applications.
+> **Why it matters:** This signifies a major financial institution's deep integration of enterprise LLMs, creating demand for AI/Data engineers skilled in deploying, managing, and securing large-scale generative AI solutions within complex, regulated environments.
 
-### [Separating signal from noise in coding evaluations](https://openai.com/index/separating-signal-from-noise-coding-evaluations)
-**Source:** OpenAI · **Score:** 70/100
+### [Australian Payments Plus moves faster with ChatGPT and Codex](https://openai.com/index/australian-payments-plus)
+**Source:** OpenAI · **Score:** 63/100
 
-OpenAI's recent analysis has uncovered significant reliability and accuracy issues within SWE-Bench Pro, a widely used coding benchmark. This raises serious concerns about the validity of current methods for evaluating AI models' coding capabilities.
+Australian Payments Plus (AP+) has successfully integrated OpenAI's ChatGPT Enterprise and Codex to streamline its operations and navigate complex payment processes more efficiently. This adoption has led to notable improvements in time savings and quality, while crucially maintaining human oversight and judgment.
 
-> **Why it matters:** For AI and Data Engineers, this directly impacts the trust placed in benchmarks used to select, fine-tune, and deploy AI models, potentially leading to misinformed decisions about model performance and suitability for production.
+> **Why it matters:** This case study highlights the practical application and benefits of enterprise-grade LLMs in critical financial infrastructure, demonstrating their potential for process optimization and quality enhancement. For AI/Data engineers, it underscores the increasing demand for expertise in deploying, integrating, and managing advanced AI solutions within complex enterprise environments.
 
-### [Helping K-12 educators build practical AI skills](https://openai.com/index/k-12-educators-practical-skills)
-**Source:** OpenAI · **Score:** 68/100
+### [Native-speed vLLM transformers modeling backend](https://huggingface.co/blog/native-speed-vllm-transformers-backend)
+**Source:** Hugging Face · **Score:** 62/100
 
-OpenAI Academy, in collaboration with the Walton Family Foundation, is launching "AI Skills Jams." These hands-on workshops are designed to equip K-12 educators with practical AI skills for integration into their classroom teaching.
-
-> **Why it matters:** This initiative is significant for AI/Data engineers as it addresses the foundational development of AI literacy in future generations, potentially leading to a more AI-aware talent pool and user base. It underscores the expanding societal integration of AI and the need for accessible, practical AI education.
-
-### [Introducing GPT-Live](https://openai.com/index/introducing-gpt-live)
-**Source:** OpenAI · **Score:** 66/100
-
-A new generation of voice models for natural human-AI interaction, now powering ChatGPT Voice.
+Native-speed vLLM transformers modeling backend
 
 > **Why it matters:** See the full article for details.
 
-### [NVIDIA Nemotron Achieves Benchmark-Leading Performance With LangChain Deep Agents Harness](https://blogs.nvidia.com/blog/nemotron-langchain-agents-open-stack/)
-**Source:** NVIDIA AI · **Score:** 65/100
+### [From Hugging Face to Amazon SageMaker Studio in one click](https://huggingface.co/blog/amazon/one-click-to-sagemaker-studio)
+**Source:** Hugging Face · **Score:** 62/100
 
-NVIDIA Nemotron 3 Ultra has achieved benchmark-leading performance, offering a lower-cost alternative to top closed models. This was accomplished by LangChain tuning its Deep Agents harness for Nemotron 3 Ultra, resulting in the highest accuracy among open models, higher throughput, and increased task completion.
+Hugging Face introduced a one‑click integration that lets users push models directly into Amazon SageMaker Studio, simplifying deployment and fine‑tuning on AWS.
 
-> **Why it matters:** This development is significant for AI/Data engineers as it provides a powerful, cost-effective open-source LLM integrated with a leading agent orchestration platform. It enables the development of high-performing AI agents with improved efficiency and reduced operational costs.
+> **Why it matters:** It removes friction for AI and data engineers moving from model development to production, leveraging SageMaker’s managed infrastructure for scaling and monitoring.
+
+### [AI Innovators Adopt NVIDIA Vera - Why Max Single-Threaded CPU at Scale Matters](https://blogs.nvidia.com/blog/nvidia-vera-max-single-threaded-cpu-at-scale/)
+**Source:** NVIDIA AI · **Score:** 61/100
+
+NVIDIA introduced Vera, a new class of CPUs delivering maximum single‑threaded performance at scale to accelerate reasoning, tool‑calling and learning in agentic AI systems.
+
+> **Why it matters:** The ultra‑fast single‑threaded cores cut latency and improve throughput for AI agents, making it easier for data and AI engineers to build responsive, real‑time pipelines.
 
 ---
 
 ## 📄 Research Worth Reading
 
-### [Accurate, Interdisciplinary and Transparent Structure-property Understanding with Deep Native Structural Reasoning](https://arxiv.org/abs/2607.07708v1)
-**Source:** arXiv · **Score:** 71/100
+### [Beyond Attack-Success Rate: Action-Graded Severity Scale for Tool-Using AI Agents](https://arxiv.org/abs/2607.07474v1)
+**Source:** arXiv · **Score:** 70/100
 
-Structure-property relationships are foundational to biology, chemistry and materials science, where function, reactivity and physical response emerge from spatial, chemical and periodic organization. Mechanistically explaining these relationships requires interpreting structural evidence through scientific principles and physical constraints, from stereochemistry and bonding to symmetry, energeti
+The paper introduces a seven‑level, action‑graded severity rubric for evaluating tool‑using AI agents in red‑team tests, replacing the binary attack‑success metric. It demonstrates the rubric via a deterministic oracle and a panel of language‑model judges, revealing hidden harms and showing high ordinal agreement while exposing judge blind spots.
 
-> **Why it matters:** See the full article for details.
+> **Why it matters:** It gives AI and data engineers a nuanced, trace‑grounded safety metric that can guide the design of more robust defenses and better assess real‑world impact of agent actions.
 
-### [Institutional Red-Teaming: Deployment Rules, Not Just Models, Causally Shape Multi-Agent AI Safety](https://arxiv.org/abs/2607.07695v1)
-**Source:** arXiv · **Score:** 71/100
+### [DiaLLM: An Investigation into the Robustness-Generation Gap in English Dialect Adaptation](https://arxiv.org/abs/2607.07669v1)
+**Source:** arXiv · **Score:** 69/100
 
-Researchers introduce "institutional red-teaming," a methodology to evaluate how deployment rules, rather than just models, causally shape multi-agent AI safety. Their findings, based on a benchmark of 33,924 games, show that changing a single consequence rule can shift mean fatality by 22-58 percentage points, highlighting that no single safe default rule exists, and identity-targeting rules consistently lead to unsafe outcomes for vulnerable agents.
+The paper presents DiaLLM, a framework that continuously pretrains LLMs on the International Corpus of English and evaluates implicit and explicit post‑training adaptation with three alignment strategies across Australian, Indian, and Northern British English. Findings show that robustness to dialects and the ability to generate dialectal text are largely independent, with alignment methods affecting generation but not benchmark scores, and explicit variety‑targeted adaptation yielding more recognizable dialectal output, though not always preferred by humans.
 
-> **Why it matters:** For AI/Data engineers, this research underscores the critical importance of carefully designing and evaluating deployment rules in multi-agent systems, not just the underlying models. It provides a framework for robust safety evaluation, emphasizing that system-level rules directly impact fairness and safety outcomes, requiring engineers to consider these factors in system architecture and monitoring.
+> **Why it matters:** Understanding and closing the robustness‑generation gap is crucial for deploying LLMs in multilingual and dialect‑rich environments, impacting data pipelines, model fine‑tuning, and evaluation metrics for AI engineers.
 
-### [MedPMC: A Systematic Framework for Scaling High-Fidelity Medical Multimodal Data for Foundation Models](https://arxiv.org/abs/2607.07673v1)
-**Source:** arXiv · **Score:** 71/100
+### [Agon: Competitive Cross-Model RL with Implicit Rival Grading of Reasoning](https://arxiv.org/abs/2607.07690v1)
+**Source:** arXiv · **Score:** 69/100
 
-MedPMC is an automated, continuously updatable framework that extracts 11 million high-fidelity medical image-text pairs from 6.1 million PubMed Central articles. This curated dataset significantly improves the performance of medical multimodal foundation models across various benchmarks and clinical applications, outperforming existing baselines.
+Agon introduces a competitive training framework where two LLMs act as each other's graders, alternating between drafting and critiquing solutions, rewarding the model that out‑reasons its rival. This implicit reasoning supervision doubles pass@1 on hard DeepMath tasks compared to standard GRPO and shows similar gains across code and model families.
 
-> **Why it matters:** This work provides a critical framework for AI and Data Engineers to build scalable, high-fidelity data pipelines for domain-specific foundation models, demonstrating that superior data curation directly translates to substantial improvements in model performance and clinical utility. It underscores the importance of robust data engineering in developing reliable AI for complex fields like medicine.
+> **Why it matters:** It provides a way to improve reasoning without explicit process labels or reward models, offering a scalable method for AI engineers to boost LLM performance on complex tasks.
 
 ---
 
 ## 🛠️ New Tools & Libraries
 
-### [Single-Rollout Asynchronous Optimization for Agentic Reinforcement Learning](https://arxiv.org/abs/2607.07508v1)
-**Source:** arXiv · **Score:** 70/100
-
-Reinforcement learning (RL) is becoming increasingly important for post-training large language models (LLMs). Previous RL pipelines for LLMs were mostly synchronous and batch-interleaved, which is inefficient for long-horizon agentic tasks.
-
-> **Why it matters:** See the full article for details.
-
-### [Multi-Agent Robotic Control with Onboard Vision-Language Models](https://arxiv.org/abs/2607.07403v1)
+### [Breaking Database Lock-in: Agentic Regeneration of High Performance Storage Readers for Database Bypass](https://arxiv.org/abs/2607.07696v1)
 **Source:** arXiv · **Score:** 69/100
 
-This paper presents a Multi-Agent System (MAS) architecture for robotic control, deploying compact Vision-Language Models (VLMs) on onboard hardware to eliminate external compute dependency. The system, validated in a simulated industrial warehouse, uses a "Megamind" orchestrator to manage long-horizon planning with smaller models. It demonstrates a viable, cost-efficient alternative to cloud-dependent deployments for various industrial tasks.
+Jailbreak uses LLM‑generated code to read PostgreSQL and MySQL storage files directly into Apache Arrow buffers, bypassing JDBC/ODBC drivers and achieving up to 27× faster analytical queries.
 
-> **Why it matters:** This research is significant for AI/Data engineers as it provides a blueprint for deploying complex, VLM-driven robotic systems on edge hardware, reducing cloud reliance and addressing critical challenges in compute efficiency, real-time control, and multi-agent orchestration for industrial automation.
+> **Why it matters:** It shows AI can automate the creation of high‑performance, columnar readers for opaque database formats, letting data engineers eliminate driver bottlenecks and accelerate analytics pipelines.
 
-### [Future Confidence Distillation in Large Language Models](https://arxiv.org/abs/2607.07626v1)
+### [HIVE: Understanding Post-Hallucination Reasoning in Vision Language Models](https://arxiv.org/abs/2607.07507v1)
 **Source:** arXiv · **Score:** 69/100
 
-This research investigates LLM confidence from a temporal perspective, finding that post-solution confidence is superior to pre-solution, and hidden representations contain richer confidence data. They introduce "future confidence distillation," a method that trains predictors on pre-solution representations using post-solution teacher estimates, achieving improved calibration and cost-efficient, reliable confidence estimation. This allows for anticipating confidence before an answer is fully generated.
+The paper introduces HIVE, an evaluation framework that isolates the effect of hallucinated captions on downstream reasoning in vision‑language models, revealing that such hallucinations can sometimes boost task accuracy. By comparing faithful versus hallucinated inputs across nine tasks and models, the authors show modality‑dependent patterns and how hallucinated semantics reshape inference dynamics.
 
-> **Why it matters:** For AI/Data engineers, this provides a practical method to build more reliable and cost-effective confidence-aware LLM systems by enabling accurate confidence estimation early in the generation process. This can significantly enhance downstream decisions such as retrieval and tool use, making LLM applications more robust and efficient.
+> **Why it matters:** Understanding post‑hallucination reasoning helps engineers design more reliable multimodal pipelines and informs mitigation strategies for downstream errors.
 
-### [CARLA-GS: Decoupling Representation, Reasoning, and Physics Simulation for Autonomous Driving Corner-Case Synthesis](https://arxiv.org/abs/2607.07601v1)
-**Source:** arXiv · **Score:** 69/100
+### [From Noisy Traces to Root Causes: Structural Trajectory Analysis and Causal Extraction for Agent Optimization](https://arxiv.org/abs/2607.07702v1)
+**Source:** arXiv · **Score:** 68/100
 
-Safety evaluation for autonomous driving is dominated by rare, safety-critical interactions, motivating simulators that can deliberately synthesize corner cases with photorealistic observations. Corner-case generation is inherently a multi-source problem spanning visual representation, scene reasoning, and vehicle trajectory generation and control.
+STRACE filters redundant execution traces and isolates causal steps via a textual dependency graph, creating high signal‑to‑noise contexts that let an LLM optimizer improve long‑horizon agents, boosting success on a formal verification benchmark by 1.4×.
 
-> **Why it matters:** See the full article for details.
+> **Why it matters:** It gives AI and data engineers a systematic way to prune noisy trace data and focus on root causes, leading to more efficient and reliable agent optimization pipelines.
+
+### [SkillCenter: A Large-Scale Source-Grounded Skill Library for Autonomous AI Agents](https://arxiv.org/abs/2607.07676v1)
+**Source:** arXiv · **Score:** 68/100
+
+SkillCenter is an open library containing 216,938 structured, source‑grounded skills for autonomous AI agents, built via a multi‑source pipeline with an LLM‑based quality gate and published as searchable SQLite bundles.
+
+> **Why it matters:** It gives engineers a massive, traceable repository of vetted operational knowledge, accelerating development of reliable, secure autonomous agents.
 
 ---
 
 ## 📈 Trending on GitHub
 
-### [Lordog/dive-into-llms](https://github.com/Lordog/dive-into-llms)
-**Jupyter Notebook** · ⭐ 42,230 · ↑ 523 this week
+### [NanmiCoder/MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)
+**Python** · ⭐ 55,222 · ↑ 2,484 this week
 
-《动手学大模型Dive into LLMs》系列编程实践教程
+小红书笔记 | 评论爬虫、抖音视频 | 评论爬虫、快手视频 | 评论爬虫、B 站视频 ｜ 评论爬虫、微博帖子 ｜ 评论爬虫、百度贴吧帖子 ｜ 百度贴吧评论回复爬虫 | 知乎问答文章｜评论爬虫
 
-### [anthropics/claude-code](https://github.com/anthropics/claude-code)
-**Python** · ⭐ 136,951 · ↑ 1,733 this week
+### [ZhuLinsen/daily_stock_analysis](https://github.com/ZhuLinsen/daily_stock_analysis)
+**Python** · ⭐ 56,043 · ↑ 2,968 this week
 
-Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows - all through natural language commands.
+LLM 驱动的多市场股票智能分析系统：多源行情、实时新闻、决策看板与自动推送，支持零成本定时运行。 LLM-powered multi-market stock analysis system with multi-source market data, real-time news, decision dashboard, automated notifications, and cost-free scheduled runs.
 
-### [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify)
-**Python** · ⭐ 80,674 · ↑ 5,063 this week
+### [mukul975/Anthropic-Cybersecurity](https://github.com/mukul975/Anthropic-Cybersecurity-Skills)
+**Python** · ⭐ 23,870 · ↑ 3,367 this week
 
-AI coding assistant skill (Claude Code, Codex, OpenCode, Cursor, Gemini CLI, and more). Turn any folder of code, SQL schemas, R scripts, shell scripts, docs, papers, images, or videos into a queryable knowledge graph. App code + database schema + infrastructure in one graph.
+817 structured cybersecurity skills for AI agents · Mapped to 6 frameworks: MITRE ATT&CK, NIST CSF 2.0, MITRE ATLAS, D3FEND, NIST AI RMF & MITRE F3 (Fight Fraud) · agentskills.io standard · Works with Claude Code, GitHub Copilot, Codex CLI, Cursor, Gemini CLI & 20+ platforms · 29 security domains · Apache 2.0
 
-### [harvard-edge/cs249r_book](https://github.com/harvard-edge/cs249r_book)
-**Python** · ⭐ 27,157 · ↑ 2,085 this week
+### [usestrix/strix](https://github.com/usestrix/strix)
+**Python** · ⭐ 39,278 · ↑ 10,274 this week
 
-Machine Learning Systems
+Open-source AI penetration testing tool to find and fix your app's vulnerabilities.
 
-### [kyutai-labs/pocket-tts](https://github.com/kyutai-labs/pocket-tts)
-**Python** · ⭐ 6,667 · ↑ 1,819 this week
+### [commaai/openpilot](https://github.com/commaai/openpilot)
+**Python** · ⭐ 62,953 · ↑ 1,421 this week
 
-A TTS that fits in your CPU (and pocket)
+openpilot is an operating system for robotics. Currently, it upgrades the driver assistance system on 300+ supported cars.
 
 ---
 
 ## 🎯 Career Takeaways
 
 > AI Agents are heavily featured this week — if you're not familiar with tool calling and agent orchestration frameworks (LangGraph, MCP), now is the time.
+> Data Engineering is moving fast around open table formats. Apache Iceberg and DuckDB are worth hands-on time if you haven't tried them.
 > RAG systems are maturing — the gap between basic similarity search and production-grade retrieval is widening. Focus on reranking and evaluation.
-> Multiple LLM releases this week. Track benchmarks critically — marketing numbers and real-world performance often diverge.
 
 ---
 
