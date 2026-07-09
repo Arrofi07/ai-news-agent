@@ -12,6 +12,8 @@ wheels/
 
 # Environment / secrets — NEVER commit real API keys
 .env
+.env.*
+!.env.example
 
 # macOS noise
 .DS_Store
@@ -19,3 +21,6 @@ wheels/
 # IDE
 .idea/
 .vscode/
+
+# uv
+.python-version

@@ -1,135 +1,71 @@
-# AI Intelligence Agent — Weekly Workflow
+# AI Intelligence Agent — Weekly Collection Workflow
 #
-# Every Monday 08:00 UTC:
-#   1. Run tests
-#   2. Collect + process + summarize + generate newsletter
-#   3. Deploy to GitHub Pages  →  https://arrofi07.github.io/ai-news-agent
-#   4. Send email via Resend   →  muh.t.arrofi@gmail.com
+# Runs every Monday at 08:00 UTC (matches config.yaml schedule).
+# Also runnable manually from the Actions tab via workflow_dispatch.
 #
-# Required secrets (Settings → Secrets and variables → Actions):
-#   GEMINI_API_KEY    — Gemini 2.5 Flash summarization
-#   RESEND_API_KEY    — Resend email delivery
-#   RESEND_TO_EMAIL   — recipient address (muh.t.arrofi@gmail.com)
-
+# Prerequisites:
+#   - Add GEMINI_API_KEY to your repo's Settings -> Secrets and variables -> Actions.
+#   - Add GROQ_API_KEY too (used as the same-run fallback if Gemini gets rate
+#     limited or fails repeatedly — see llm/router.py). Optional: the pipeline
+#     still works without it, it just has one less fallback layer before
+#     rule-based summaries.
 name: Weekly AI News Collection
-
 on:
   schedule:
-    - cron: "0 8 * * 1"
-  workflow_dispatch:
+    - cron: "0 8 * * 1"    # Every Monday 08:00 UTC
+  workflow_dispatch:         # Manual trigger from the Actions tab
 
 jobs:
-  # ── Job 1: Tests ──────────────────────────────────────────────────────────
   test:
     name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - uses: astral-sh/setup-uv@v3
-
+        with:
+          version: "latest"
       - name: Install dependencies
         run: uv sync --group dev
-
       - name: Run test suite
         run: uv run python -m pytest tests/ -v
 
-  # ── Job 2: Collect + Newsletter + Email ───────────────────────────────────
   collect:
-    name: Collect & Generate Newsletter
+    name: Collect AI News
     runs-on: ubuntu-latest
-    needs: test
+    needs: test   # (b) collection must not run — and must not push — on a failing test suite
     permissions:
-      contents: write
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-
+      contents: write        # Needed to commit the generated DB / output back to the repo
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v5
+          fetch-depth: 0     # Full history so we can push back cleanly
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - uses: astral-sh/setup-uv@v3
-
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
       - name: Install dependencies
         run: uv sync
-
-      - name: Create output directories
-        run: mkdir -p data output
-
-      - name: Run full pipeline
+      - name: Run collection pipeline
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_TO_EMAIL: ${{ secrets.RESEND_TO_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # Used in Phase 4+; safe to be empty for now
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}       # (c) Fallback provider — also safe to be empty
         run: uv run main.py
-
-      - name: Build GitHub Pages site
-        run: |
-          mkdir -p _site
-
-          # Copy all newsletters to the site
-          cp output/*.html _site/ 2>/dev/null || true
-
-          # Find the latest newsletter and make it index.html
-          LATEST=$(ls -t output/*.html 2>/dev/null | head -1)
-          if [ -n "$LATEST" ]; then
-            cp "$LATEST" _site/index.html
-            echo "Latest newsletter: $LATEST"
-          fi
-
-          # Simple archive page listing all past newsletters
-          echo "<!DOCTYPE html><html><head><meta charset='UTF-8'>" > _site/archive.html
-          echo "<title>AI Weekly — Archive</title>" >> _site/archive.html
-          echo "<style>body{font-family:sans-serif;max-width:600px;margin:40px auto;padding:0 20px}</style>" >> _site/archive.html
-          echo "</head><body><h1>🤖 AI Weekly Archive</h1><ul>" >> _site/archive.html
-          for f in $(ls -t output/*.html 2>/dev/null); do
-            name=$(basename "$f" .html)
-            echo "<li><a href='${name}.html'>${name}</a></li>" >> _site/archive.html
-          done
-          echo "</ul></body></html>" >> _site/archive.html
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site/
-
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
-
-      - name: Commit DB and outputs back to repo
+      - name: Commit and push outputs
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/news.db output/ || true
-          if git diff --staged --quiet; then
-            echo "Nothing new to commit."
-          else
-            WEEK=$(date -u +'%Y-W%V')
-            git commit -m "newsletter: ${WEEK} collection run"
-            git push
-          fi
+          git add data/news.db
+          [ -d output ] && git add output/ || true
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "chore: weekly collection run $(date -u +'%Y-%m-%d')"
+          git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload newsletter as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: newsletter-${{ github.run_id }}
-          path: output/
-          retention-days: 90
