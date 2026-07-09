@@ -15,13 +15,13 @@ Key design decisions:
 from __future__ import annotations
 
 import json
-import re
 import time
 from typing import Any
 
 import requests
 
 from config.prompts import article_summary_prompt
+from llm.common import fallback_summary, parse_json_response
 from scheduler.logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -44,29 +44,31 @@ class GeminiClient:
 
     def summarize_article(
         self, title: str, source: str, content: str
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, Any], bool]:
         """
-        Summarize a single article. Returns a dict with at minimum:
-          summary, why_it_matters, career_impact, category, tags, estimated_read_minutes
+        Summarize a single article. Returns (result, ok).
 
-        Never raises — returns a rule-based fallback on any failure so the
-        pipeline keeps running even if the API is down or quota is exhausted.
+        result always has at minimum: summary, why_it_matters, career_impact,
+        category, tags, estimated_read_minutes — result is the rule-based
+        fallback when ok is False, so callers that don't care about routing
+        (e.g. the very first version of this pipeline) can just use result
+        and ignore ok. Never raises.
         """
         prompt = article_summary_prompt(title, source, content)
         try:
-            raw, truncated = self._call(prompt)
+            raw, truncated = self._call(prompt, want_json=True)
             if truncated:
                 # A cut-off JSON blob will usually fail to parse anyway, but
                 # don't even try — go straight to the rule-based fallback.
                 logger.warning("Gemini summary truncated for '%s'", title[:60])
             else:
-                result = _parse_json_response(raw)
+                result = parse_json_response(raw)
                 if result:
-                    return result
+                    return result, True
         except Exception as e:
             logger.warning("Gemini summarization failed for '%s': %s", title[:60], e)
 
-        return _fallback_summary(title, content)
+        return fallback_summary(title, content), False
 
     def generate_text(self, prompt: str, max_output_tokens: int = 4096) -> str:
         """
@@ -101,7 +103,8 @@ class GeminiClient:
     # ── private ────────────────────────────────────────────────────────────
 
     def _call(
-        self, prompt: str, max_retries: int = 3, max_output_tokens: int = 1024
+        self, prompt: str, max_retries: int = 3, max_output_tokens: int = 1024,
+        want_json: bool = False,
     ) -> tuple[str, bool]:
         """Make a Gemini API call with exponential backoff on rate limit errors.
 
@@ -109,14 +112,25 @@ class GeminiClient:
         finishReason says the response was cut off by the token budget, so
         callers can decide whether a truncated response is acceptable instead
         of us silently returning partial text as if it were complete.
+
+        want_json=True sets responseMimeType: application/json, which makes
+        Gemini guarantee syntactically valid JSON at the API level — this is
+        strictly better than parsing best-effort free text after the fact,
+        since no amount of parser leniency (see llm/common.py) can fix a
+        response that's structurally broken (e.g. an unescaped quote inside
+        a string value breaking out of the JSON early). Never set this for
+        generate_text's newsletter prose, which must stay Markdown, not JSON.
         """
         url = GEMINI_API_URL.format(model=self.model, api_key=self.api_key)
+        generation_config = {
+            "temperature": 0.3,        # Low temp for factual summaries
+            "maxOutputTokens": max_output_tokens,
+        }
+        if want_json:
+            generation_config["responseMimeType"] = "application/json"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": 0.3,        # Low temp for factual summaries
-                "maxOutputTokens": max_output_tokens,
-            },
+            "generationConfig": generation_config,
         }
 
         for attempt in range(max_retries):
@@ -170,50 +184,3 @@ def _is_truncated(response_data: dict) -> bool:
         return response_data["candidates"][0].get("finishReason") == "MAX_TOKENS"
     except (KeyError, IndexError):
         return False
-
-
-def _parse_json_response(text: str) -> dict | None:
-    """
-    Parse a JSON response from the LLM, handling common issues:
-    - Markdown code fences (```json ... ```)
-    - Leading/trailing whitespace
-    - Partial JSON (we log and return None so callers fall back gracefully)
-    """
-    if not text:
-        return None
-
-    # Strip markdown code fences
-    text = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
-    text = re.sub(r"\s*```$", "", text.strip(), flags=re.MULTILINE)
-    text = text.strip()
-
-    # Find the first {...} block if there's surrounding prose
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if match:
-        text = match.group(0)
-
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as e:
-        logger.warning("Failed to parse LLM JSON response: %s\nRaw: %s", e, text[:200])
-        return None
-
-
-def _fallback_summary(title: str, content: str) -> dict:
-    """
-    Rule-based summary when the LLM is unavailable.
-    Good enough to keep the newsletter running, clearly marked as auto-generated.
-    """
-    # Take the first 2 sentences of cleaned content as a summary
-    sentences = re.split(r"(?<=[.!?])\s+", (content or "").strip())
-    summary = " ".join(sentences[:2]) if sentences else title
-
-    return {
-        "summary": summary[:400] or title,
-        "why_it_matters": "See the full article for details.",
-        "career_impact": "medium",
-        "category": "general",
-        "tags": [],
-        "estimated_read_minutes": 3,
-        "_fallback": True,   # Flag so we know this wasn't LLM-generated
-    }
