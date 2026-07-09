@@ -14,9 +14,19 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
+
+# Load .env into the process environment as soon as config is imported —
+# every api_key / groq_api_key property below reads from os.environ, and
+# without this call a .env file was never actually read despite the error
+# messages in llm/gemini.py and llm/groq_client.py telling people to use one.
+# Safe in GitHub Actions too: load_dotenv() is a silent no-op when no .env
+# file exists, and by default it won't override a variable already set in
+# the environment (e.g. by `env:` in the workflow), so secrets still win.
+load_dotenv(PROJECT_ROOT / ".env")
 
 
 @dataclass
@@ -77,6 +87,7 @@ class NewsletterConfig:
 class LLMConfig:
     provider: str = "gemini"
     model: str = "gemini-2.5-flash"
+    groq_model: str = "openai/gpt-oss-120b"
 
     @property
     def api_key(self) -> str | None:
@@ -87,6 +98,13 @@ class LLMConfig:
             "anthropic": "ANTHROPIC_API_KEY",
         }.get(self.provider, "GEMINI_API_KEY")
         return os.environ.get(env_var)
+
+    @property
+    def groq_api_key(self) -> str | None:
+        # Separate from `api_key` above (which is keyed off `provider`) since
+        # Groq is used as a same-run fallback alongside the primary provider,
+        # not a provider you switch `provider:` to in config.yaml.
+        return os.environ.get("GROQ_API_KEY")
 
 
 @dataclass
@@ -155,6 +173,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
     llm = LLMConfig(
         provider=llm_raw.get("provider", "gemini"),
         model=llm_raw.get("model", "gemini-2.5-flash"),
+        groq_model=llm_raw.get("groq_model", "openai/gpt-oss-120b"),
     )
 
     return AppConfig(

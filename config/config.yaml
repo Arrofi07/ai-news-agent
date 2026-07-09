@@ -65,3 +65,16 @@ llm:
   provider: "gemini"
   model: "gemini-2.5-flash"
   # api key is read from the GEMINI_API_KEY environment variable, never stored here
+  #
+  # Fallback provider: if Gemini fails repeatedly in a single run (rate limit,
+  # timeout, truncation), llm/router.py switches to Groq for the rest of that
+  # run rather than falling all the way back to rule-based summaries.
+  # Only used when GROQ_API_KEY is set — the pipeline works fine without it,
+  # it just has one less fallback layer before rule-based summaries.
+  #
+  # openai/gpt-oss-120b, not llama-3.3-70b-versatile: Groq deprecated the
+  # Llama model on 2026-06-17 and recommends this as the general-purpose
+  # replacement. Check https://console.groq.com/docs/deprecations before
+  # assuming this is still current.
+  groq_model: "openai/gpt-oss-120b"
+  # groq api key is read from the GROQ_API_KEY environment variable
