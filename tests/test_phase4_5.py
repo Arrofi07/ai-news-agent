@@ -111,25 +111,54 @@ class TestGeminiClient(unittest.TestCase):
             "estimated_read_minutes": 3,
         })
         with patch("requests.post", return_value=self._mock_response(good_json)):
-            result = client.summarize_article("GPT-X Released", "OpenAI", "Content here.")
+            result, ok = client.summarize_article("GPT-X Released", "OpenAI", "Content here.")
+        self.assertTrue(ok)
         self.assertEqual(result["summary"], "OpenAI released GPT-X with improved reasoning.")
         self.assertEqual(result["career_impact"], "high")
         self.assertIsInstance(result["tags"], list)
+
+    def test_summarize_article_requests_json_mode(self):
+        """summarize_article must ask Gemini to structurally guarantee valid
+        JSON (responseMimeType) rather than relying only on best-effort
+        parsing of free text — this is the actual fix for malformed JSON
+        (e.g. unescaped quotes), not just a parser-leniency workaround."""
+        from llm.gemini import GeminiClient
+        client = self._make_client()
+        good_json = json.dumps({"summary": "x", "why_it_matters": "y",
+                                "career_impact": "low", "category": "general",
+                                "tags": [], "estimated_read_minutes": 1})
+        with patch("requests.post", return_value=self._mock_response(good_json)) as mock_post:
+            client.summarize_article("T", "S", "C")
+        sent_payload = mock_post.call_args.kwargs["json"]
+        self.assertEqual(sent_payload["generationConfig"].get("responseMimeType"), "application/json")
 
     def test_summarize_strips_markdown_fences(self):
         from llm.gemini import GeminiClient
         client = self._make_client()
         fenced = '```json\n{"summary": "Test.", "why_it_matters": "Big.", "career_impact": "high", "category": "llm", "tags": [], "estimated_read_minutes": 2}\n```'
         with patch("requests.post", return_value=self._mock_response(fenced)):
-            result = client.summarize_article("Test", "Test", "Content.")
+            result, ok = client.summarize_article("Test", "Test", "Content.")
+        self.assertTrue(ok)
         self.assertEqual(result["summary"], "Test.")
+
+    def test_generate_text_does_not_request_json_mode(self):
+        """The newsletter is Markdown prose, not JSON — forcing JSON mode
+        here would break it, so generate_text must never set it."""
+        from llm.gemini import GeminiClient
+        client = self._make_client()
+        with patch("requests.post", return_value=self._mock_response("Full newsletter text.")) as mock_post:
+            client.generate_text("write a newsletter")
+        sent_payload = mock_post.call_args.kwargs["json"]
+        self.assertNotIn("responseMimeType", sent_payload["generationConfig"])
 
     def test_summarize_falls_back_on_invalid_json(self):
         from llm.gemini import GeminiClient
         client = self._make_client()
         with patch("requests.post", return_value=self._mock_response("not json at all!")):
-            result = client.summarize_article("Title", "Source", "Content")
-        # Should return fallback, not raise
+            result, ok = client.summarize_article("Title", "Source", "Content")
+        # Should return fallback, not raise, and report ok=False so the
+        # provider chain knows this was a failure.
+        self.assertFalse(ok)
         self.assertIn("summary", result)
         self.assertTrue(result.get("_fallback"))
 
@@ -137,7 +166,8 @@ class TestGeminiClient(unittest.TestCase):
         from llm.gemini import GeminiClient
         client = self._make_client()
         with patch("requests.post", side_effect=Exception("network error")):
-            result = client.summarize_article("Title", "Source", "Content")
+            result, ok = client.summarize_article("Title", "Source", "Content")
+        self.assertFalse(ok)
         self.assertIn("summary", result)
         self.assertTrue(result.get("_fallback"))
 
@@ -154,20 +184,33 @@ class TestGeminiClient(unittest.TestCase):
 
         with patch("requests.post", side_effect=[rate_limited, good_resp]), \
              patch("time.sleep"):
-            result = client.summarize_article("T", "S", "C")
+            result, ok = client.summarize_article("T", "S", "C")
+        self.assertTrue(ok)
         self.assertEqual(result["summary"], "OK")
 
     def test_parse_json_response_handles_prose_wrapping(self):
-        from llm.gemini import _parse_json_response
+        from llm.common import parse_json_response
         text = 'Here is the analysis:\n{"summary": "Test", "why_it_matters": "Big", "career_impact": "high", "category": "llm", "tags": [], "estimated_read_minutes": 2}\nEnd of response.'
-        result = _parse_json_response(text)
+        result = parse_json_response(text)
         self.assertIsNotNone(result)
         self.assertEqual(result["summary"], "Test")
 
+    def test_parse_json_response_tolerates_literal_control_characters(self):
+        """Real production failure: Groq returned a JSON string value
+        containing a literal newline instead of an escaped \\n, which
+        Python's strict JSON parser rejects outright by default."""
+        from llm.common import parse_json_response
+        # Deliberately embed a raw newline inside the "summary" string value
+        # (not an escaped \n) — this is what strict json.loads chokes on.
+        text = '{"summary": "First line.\nSecond line.", "why_it_matters": "Big", "career_impact": "high", "category": "llm", "tags": [], "estimated_read_minutes": 2}'
+        result = parse_json_response(text)
+        self.assertIsNotNone(result, "a literal control character inside a string value should not fail parsing")
+        self.assertIn("First line.", result["summary"])
+
     def test_fallback_summary_uses_first_sentences(self):
-        from llm.gemini import _fallback_summary
+        from llm.common import fallback_summary
         content = "First sentence here. Second sentence here. Third sentence."
-        result = _fallback_summary("Title", content)
+        result = fallback_summary("Title", content)
         self.assertIn("First sentence", result["summary"])
         self.assertTrue(result["_fallback"])
 
@@ -175,6 +218,133 @@ class TestGeminiClient(unittest.TestCase):
         from llm.gemini import GeminiClient
         with self.assertRaises(ValueError):
             GeminiClient(api_key="", model="gemini-2.5-flash")
+
+
+# ── Groq client tests ──────────────────────────────────────────────────────────
+
+class TestGroqClient(unittest.TestCase):
+    """Groq's client mirrors GeminiClient's contract but speaks OpenAI's
+    chat-completion shape — these tests confirm both the happy path and
+    the truncation-detection logic work with that different response shape."""
+
+    def _make_client(self):
+        from llm.groq_client import GroqClient
+        return GroqClient(api_key="fake-groq-key", model="openai/gpt-oss-120b")
+
+    def _mock_response(self, text: str, finish_reason: str = "stop") -> MagicMock:
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.raise_for_status = lambda: None
+        resp.json.return_value = {
+            "choices": [{"message": {"content": text}, "finish_reason": finish_reason}]
+        }
+        return resp
+
+    def test_summarize_article_parses_valid_json(self):
+        client = self._make_client()
+        good_json = json.dumps({
+            "summary": "Groq-summarized article.", "why_it_matters": "Matters.",
+            "career_impact": "medium", "category": "llm", "tags": [], "estimated_read_minutes": 2,
+        })
+        with patch("requests.post", return_value=self._mock_response(good_json)):
+            result, ok = client.summarize_article("Title", "Source", "Content")
+        self.assertTrue(ok)
+        self.assertEqual(result["summary"], "Groq-summarized article.")
+
+    def test_summarize_article_requests_json_mode(self):
+        """Real production bug this fixes: Groq returned structurally
+        malformed JSON ("Expecting ',' delimiter...", almost certainly an
+        unescaped quote inside a string value) that no parser leniency could
+        recover from. response_format: json_object makes Groq guarantee
+        valid JSON at the API level instead."""
+        client = self._make_client()
+        good_json = json.dumps({"summary": "x", "why_it_matters": "y",
+                                "career_impact": "low", "category": "general",
+                                "tags": [], "estimated_read_minutes": 1})
+        with patch("requests.post", return_value=self._mock_response(good_json)) as mock_post:
+            client.summarize_article("T", "S", "C")
+        sent_payload = mock_post.call_args.kwargs["json"]
+        self.assertEqual(sent_payload.get("response_format"), {"type": "json_object"})
+
+    def test_generate_text_does_not_request_json_mode(self):
+        """The newsletter is Markdown prose, not JSON — forcing JSON mode
+        here would break it, so generate_text must never set it."""
+        client = self._make_client()
+        with patch("requests.post", return_value=self._mock_response("Full newsletter text.")) as mock_post:
+            client.generate_text("write a newsletter")
+        sent_payload = mock_post.call_args.kwargs["json"]
+        self.assertNotIn("response_format", sent_payload)
+
+    def test_generate_text_detects_truncation(self):
+        client = self._make_client()
+        with patch("requests.post", return_value=self._mock_response("cut off mid-sen", finish_reason="length")):
+            text = client.generate_text("write a newsletter", max_output_tokens=10)
+        # Truncated responses must come back empty, not partial text, so
+        # callers (build_markdown's validator) reliably fall back.
+        self.assertEqual(text, "")
+
+    def test_generate_text_returns_full_response(self):
+        client = self._make_client()
+        with patch("requests.post", return_value=self._mock_response("Full newsletter text.")):
+            text = client.generate_text("write a newsletter")
+        self.assertEqual(text, "Full newsletter text.")
+
+    def test_no_api_key_raises_on_init(self):
+        from llm.groq_client import GroqClient
+        with self.assertRaises(ValueError):
+            GroqClient(api_key="", model="openai/gpt-oss-120b")
+
+
+# ── provider chain / circuit breaker tests ─────────────────────────────────────
+
+class TestProviderChain(unittest.TestCase):
+
+    def test_stays_on_active_provider_while_succeeding(self):
+        from llm.router import ProviderChain
+        chain = ProviderChain([("gemini", object()), ("groq", object())])
+        for _ in range(10):
+            switched = chain.record_result(ok=True)
+            self.assertFalse(switched)
+        self.assertEqual(chain.active_name, "gemini")
+
+    def test_switches_after_threshold_consecutive_failures(self):
+        from llm.router import ProviderChain
+        chain = ProviderChain([("gemini", object()), ("groq", object())], failure_threshold=2)
+        self.assertFalse(chain.record_result(ok=False))   # 1st failure — no switch yet
+        self.assertTrue(chain.record_result(ok=False))    # 2nd failure — switches
+        self.assertEqual(chain.active_name, "groq")
+
+    def test_a_success_resets_the_failure_count(self):
+        from llm.router import ProviderChain
+        chain = ProviderChain([("gemini", object()), ("groq", object())], failure_threshold=2)
+        chain.record_result(ok=False)
+        chain.record_result(ok=True)   # resets counter
+        chain.record_result(ok=False)  # only 1 consecutive failure now
+        self.assertEqual(chain.active_name, "gemini", "should not have switched")
+
+    def test_exhausts_to_none_after_last_provider_fails(self):
+        from llm.router import ProviderChain
+        chain = ProviderChain([("gemini", object())], failure_threshold=1)
+        chain.record_result(ok=False)
+        self.assertIsNone(chain.active_client)
+        self.assertIsNone(chain.active_name)
+
+    def test_none_clients_are_filtered_out(self):
+        """Callers pass ("groq", None) directly when no API key is set,
+        rather than pre-filtering — the chain should just skip it."""
+        from llm.router import ProviderChain
+        chain = ProviderChain([("gemini", object()), ("groq", None)])
+        self.assertEqual(chain.active_name, "gemini")
+        chain.record_result(ok=False)
+        chain.record_result(ok=False)
+        # groq was None, so exhausting gemini should skip straight to "no provider"
+        self.assertIsNone(chain.active_name)
+
+    def test_empty_chain_has_no_active_client(self):
+        from llm.router import ProviderChain
+        chain = ProviderChain([])
+        self.assertIsNone(chain.active_client)
+        self.assertIsNone(chain.active_name)
 
 
 # ── summarization runner tests ─────────────────────────────────────────────────
@@ -222,10 +392,14 @@ class TestSummarizationRunner(unittest.TestCase):
         from config.loader import load_config
         cfg = load_config()
         cfg.database.path = self._make_db()
-        # Patch api_key to None
+        # Patch both keys to None so this test is deterministic regardless
+        # of what's actually in the environment running it.
         import unittest.mock as mock
-        with mock.patch.object(type(cfg.llm), 'api_key', new_callable=mock.PropertyMock, return_value=None):
-            grouped = run_summarization(cfg)
+        with mock.patch.object(type(cfg.llm), 'api_key', new_callable=mock.PropertyMock, return_value=None), \
+             mock.patch.object(type(cfg.llm), 'groq_api_key', new_callable=mock.PropertyMock, return_value=None):
+            grouped, client, provider_name = run_summarization(cfg)
+        self.assertIsNone(client)
+        self.assertIsNone(provider_name)
         self.assertIn("top_stories", grouped)
         self.assertIn("github", grouped)
         # Every article should have a summary (fallback or real)
@@ -233,6 +407,39 @@ class TestSummarizationRunner(unittest.TestCase):
             for a in articles:
                 self.assertIsNotNone(a.get("summary"),
                                      f"Missing summary in {section}: {a.get('title')}")
+
+    def test_run_summarization_falls_back_to_groq_after_gemini_fails(self):
+        """The circuit breaker in llm/router.py should switch providers
+        mid-run rather than retrying a failing Gemini forever — this is the
+        production bug from the real weekly run (cascading 429s) that
+        motivated the hybrid fallback."""
+        from llm.summarize import run_summarization
+        from llm.gemini import GeminiClient
+        from llm.groq_client import GroqClient
+        from config.loader import load_config
+        import unittest.mock as mock
+
+        cfg = load_config()
+        cfg.database.path = self._make_db()
+
+        groq_result = {
+            "summary": "Summarized by Groq.", "why_it_matters": "Matters.",
+            "career_impact": "medium", "category": "llm", "tags": [], "estimated_read_minutes": 2,
+        }
+
+        with mock.patch.object(type(cfg.llm), 'api_key', new_callable=mock.PropertyMock, return_value="fake-gemini-key"), \
+             mock.patch.object(type(cfg.llm), 'groq_api_key', new_callable=mock.PropertyMock, return_value="fake-groq-key"), \
+             patch.object(GeminiClient, "_call", side_effect=RuntimeError("Gemini API failed after 3 attempts")), \
+             patch.object(GroqClient, "_call", return_value=(json.dumps(groq_result), False)), \
+             patch("time.sleep"):
+            grouped, client, provider_name = run_summarization(cfg)
+
+        # Gemini never succeeds, so the chain must have switched to Groq.
+        self.assertEqual(provider_name, "groq")
+        self.assertIsInstance(client, GroqClient)
+        # And the articles should carry Groq's summary, not a rule-based one.
+        rss_articles = grouped["top_stories"]
+        self.assertTrue(any(a.get("summary") == "Summarized by Groq." for a in rss_articles))
 
     def test_github_repos_get_auto_summary_without_llm(self):
         from llm.summarize import run_summarization, _github_why_it_matters
@@ -265,6 +472,61 @@ class TestSummarizationRunner(unittest.TestCase):
         ids = [r["id"] for r in results]
         self.assertNotIn("dup1", ids)
         self.assertIn("ok1", ids)
+
+    def test_select_tools_respects_exclude_ids(self):
+        """Real production bug: an arXiv paper tagged open_source/python
+        matched both the research query and the tools query, so it got
+        selected — and summarized, and billed — twice in one run."""
+        from llm.summarize import _select_tools
+        from database.database import init_db, db_session
+        path = tempfile.mktemp(suffix=".db")
+        self.tmp_dbs.append(path)
+        init_db(path)
+        now = datetime.now(timezone.utc).isoformat()
+        with db_session(path) as conn:
+            conn.execute(
+                "INSERT INTO articles (id,title,url,source,source_type,content,"
+                "published_at,category,tags,importance,extra) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                ("arx1", "A tool-shaped paper", "https://arxiv.org/abs/1", "arXiv", "arxiv",
+                 "C", now, "open_source", "python", 80.0, "{}")
+            )
+        # Without exclusion, this arXiv paper matches _select_tools' criteria
+        without_exclusion = [r["id"] for r in _select_tools(path, 10)]
+        self.assertIn("arx1", without_exclusion)
+
+        # If it was already claimed by the research selection, tools must skip it
+        with_exclusion = [r["id"] for r in _select_tools(path, 10, exclude_ids={"arx1"})]
+        self.assertNotIn("arx1", with_exclusion)
+
+    def test_run_summarization_never_selects_same_article_twice(self):
+        """Integration-level version of the above: an article that could
+        satisfy both the research and tools queries must only appear in
+        grouped once total, across all sections."""
+        from llm.summarize import run_summarization
+        from database.database import init_db, db_session
+        import unittest.mock as mock
+
+        path = tempfile.mktemp(suffix=".db")
+        self.tmp_dbs.append(path)
+        init_db(path)
+        now = datetime.now(timezone.utc).isoformat()
+        with db_session(path) as conn:
+            conn.execute(
+                "INSERT INTO articles (id,title,url,source,source_type,content,"
+                "published_at,category,tags,importance,extra) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                ("arx1", "A tool-shaped paper", "https://arxiv.org/abs/1", "arXiv", "arxiv",
+                 "C", now, "open_source", "python", 80.0, "{}")
+            )
+        from config.loader import load_config
+        cfg = load_config()
+        cfg.database.path = path
+        with mock.patch.object(type(cfg.llm), 'api_key', new_callable=mock.PropertyMock, return_value=None), \
+             mock.patch.object(type(cfg.llm), 'groq_api_key', new_callable=mock.PropertyMock, return_value=None):
+            grouped, _, _ = run_summarization(cfg)
+
+        all_ids = [a["id"] for articles in grouped.values() for a in articles]
+        self.assertEqual(all_ids.count("arx1"), 1,
+                         "arx1 satisfies both the research and tools queries — must only be selected once")
 
     def test_select_top_stories_excludes_already_featured(self):
         """An article already shipped in a past newsletter must not be
