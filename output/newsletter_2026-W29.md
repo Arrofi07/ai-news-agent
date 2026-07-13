@@ -1,70 +1,138 @@
-# AI Weekly Intelligence Report  
-**Week 29 – 2026**  
+# AI Weekly Intelligence Report
+
+**Week 29 - 2026** · Generated 2026-07-13
 
 ---
 
-## 🔥 Top Stories  
+## 🔥 Top Stories
 
-### OpenAI’s enterprise push  
+### [PaperBench: Evaluating AI's Ability to Replicate AI Research](https://openai.com/index/paperbench)
+**Source:** OpenAI · **Score:** 51/100
 
-- **[How Deutsche Telekom is rewiring telecommunications with AI](https://openai.com/index/deutsche-telekom)** – Deutsche Telekom is turning into an AI‑native telco. OpenAI’s models now power customer‑service bots, employee‑assist workflows, network‑operations analytics, and a next‑gen voice platform. The rollout shows how a legacy operator can retrofit AI across every layer of its stack.  
+OpenAI has introduced PaperBench, a new benchmark designed to evaluate the capability of AI agents to replicate state-of-the-art AI research. This initiative aims to assess how effectively AI systems can understand, execute, and reproduce complex scientific methodologies and findings within the AI domain.
 
-- **[ChatGPT Work: an AI partner for your most ambitious projects](https://openai.com/index/chatgpt-for-your-most-ambitious-work)** – OpenAI released “ChatGPT Work,” an autonomous agent that can span apps, files, and APIs, keep a project’s context alive for days, and turn high‑level goals into finished deliverables. Engineers must now think about persistent state, fine‑grained permissioning, and end‑to‑end monitoring for multi‑step pipelines.  
+### [GeForce NOW Turns Up the Heat With New GeForce RTX 5080-Powered Toronto Server](https://blogs.nvidia.com/blog/geforce-now-thursday-toronto-expansion/)
+**Source:** NVIDIA AI · **Score:** 51/100
 
-- **[GPT‑5.6 becomes the default model in Microsoft 365 Copilot](https://openai.com/index/gpt-5-6-preferred-model-microsoft-365-copilot)** – Microsoft upgraded Copilot’s backbone to GPT‑5.6, promising faster, higher‑quality suggestions in Word, Excel, PowerPoint, and the new “Cowork” chat. The move illustrates the scale of LLM ops required for a global SaaS suite: automated prompt versioning, telemetry at billions of calls, and seamless rollout across tenant boundaries.  
+NVIDIA's GeForce NOW cloud gaming service is expanding its infrastructure with a new high-performance server in Toronto. This new server is powered by the GeForce RTX 5080, aiming to bring dedicated cloud gaming closer to members in the region.
 
-- **[GPT‑5.6: Frontier intelligence that scales with your ambition](https://openai.com/index/gpt-5-6)** – OpenAI’s latest model delivers more “intelligence per token,” lower inference cost, and broader functional coverage. For data engineers, the higher token efficiency translates into cheaper batch inference and the ability to embed richer reasoning in downstream pipelines without blowing budgets.  
+> **Why it matters:** The deployment of new, powerful RTX 5080 GPUs in a cloud infrastructure, even for gaming, indicates a broader trend of increasing availability of cutting-edge NVIDIA hardware in the cloud. This expansion could eventually translate to more accessible and lower-latency high-performance computing resources for AI/Data engineers, impacting future model training and data processing capabilities.
 
-### Performance engineering  
+### [Patch the Planet: a Daybreak initiative to support open source maintainers](https://openai.com/index/patch-the-planet)
+**Source:** OpenAI · **Score:** 50/100
 
-- **[Profiling in PyTorch (Part 3): Attention is all you profile](https://huggingface.co/blog/torch-attention-profile)** – The article walks through concrete profiling techniques for the attention sub‑layer, exposing memory spikes and kernel inefficiencies that dominate Transformer latency. Applying the suggested kernels and kernel‑fusion tricks can shave 20‑30 % off end‑to‑end inference time on a single GPU.  
+OpenAI has launched "Patch the Planet," a Daybreak initiative aimed at bolstering the security of open-source projects. This program will assist open-source maintainers in identifying, validating, and remediating software vulnerabilities through a combination of AI-powered tools and expert human review.
 
----
+> **Why it matters:** For AI and Data Engineers, this initiative is significant as it promises to enhance the security and reliability of the open-source libraries and frameworks that form the bedrock of most AI/ML and data pipelines. A more secure open-source ecosystem reduces the attack surface and operational risks for projects built by these engineers.
 
-## 📄 Research Worth Reading  
+### [Predicting model behavior before release by simulating deployment](https://openai.com/index/deployment-simulation)
+**Source:** OpenAI · **Score:** 50/100
 
-- **[Agora: Enhancing LLM Agent Reasoning Via Auction‑Based Task Allocation](https://arxiv.org/abs/2607.09600v1)** – Proposes an auction mechanism that dynamically assigns tasks to the most cost‑effective expert LLMs, improving both latency and spend. The approach is a blueprint for building multi‑agent orchestration layers that respect SLA constraints.  
+OpenAI has introduced Deployment Simulation, a new method designed to predict the behavior of AI models prior to their official release. This technique leverages real conversation data to enhance both model safety and the accuracy of its evaluation.
 
-- **[FreyaTTS Technical Report](https://arxiv.org/abs/2607.09530v1)** – Introduces a tokenizer‑free, Turkish‑first TTS model that runs faster than real‑time on a laptop while using a fraction of the parameters of comparable open‑source systems. Its diffusion‑based architecture is a strong candidate for low‑latency edge speech services.  
+> **Why it matters:** This innovation is critical for AI and Data Engineers as it offers a proactive approach to MLOps, enabling more robust pre-deployment testing and validation using realistic data. It directly addresses challenges in ensuring model reliability, safety, and accurate performance evaluation in production environments.
 
-- **[Shared Selective Persistent Memory for Agentic LLM Systems](https://arxiv.org/abs/2607.09493v1)** – Describes a memory layer that retains reusable context (schemas, tool configs) across sessions while discarding transient reasoning traces. Experiments show a jump from 79 % to 96 % task success, and a zero‑token data‑refresh mechanism that cuts token costs dramatically.  
+### [Warp's big bet on building open source with GPT-5.5](https://openai.com/index/warp)
+**Source:** OpenAI · **Score:** 50/100
 
----
+Warp is making a significant move by integrating GPT-5.5 and other OpenAI models to power its coding agents. These agents are designed to streamline and coordinate development efforts across diverse environments, including local machines, cloud platforms, and open-source projects.
 
-## 🛠️ New Tools & Libraries  
-
-- **[Task‑Specific Multimodal QA Agents for QANTA 2026](https://arxiv.org/abs/2607.09623v1)** – A two‑agent system that couples a GPT‑4o‑class model with confidence calibration and incremental reasoning, winning the multimodal quiz‑bowl challenge. The design demonstrates how lightweight, confidence‑aware agents can dominate when compute budgets are tight.  
-
-- **[WILDTRACE: Benchmarking Natural Evidence Trails in Long‑Context Reasoning](https://arxiv.org/abs/2607.09328v1)** – A 481‑task benchmark built from real‑world documents where evidence is naturally dispersed. It forces LLMs to perform genuine long‑context reasoning, making it a valuable testbed for Retrieval‑Augmented Generation pipelines.  
-
-- **[Mach‑Mind‑4‑Flash Technical Report](https://arxiv.org/abs/2607.09375v1)** – A 35 B Mixture‑of‑Experts model that activates only 3 B parameters per token, achieving performance comparable to 100 B‑scale models after post‑training optimization alone. The report includes recipes for expert routing and activation‑sparsity that can be reused in custom MoE deployments.  
-
-- **[Lean‑QIT: Formal Infrastructure for Quantum Information Theory](https://arxiv.org/abs/2607.09632v1)** – A Lean 4 library that formalizes core QIT results (e.g., Schumacher coding, Holevo capacity). It gives engineers a machine‑checked foundation for integrating quantum algorithms into data pipelines and for building AI‑driven proof assistants.  
+> **Why it matters:** This development is crucial for AI/Data engineers as it demonstrates the practical application of advanced LLMs like GPT-5.5 in orchestrating sophisticated coding agents. It points to a future where AI-driven automation will deeply integrate into and potentially redefine development workflows across various environments.
 
 ---
 
-## 📈 Trending on GitHub  
+## 📄 Research Worth Reading
 
-| Repo | Stars today | Total stars | Language |
-|------|--------------|-------------|----------|
-| **[alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills)** | 1,993 | 22,451 | Python |
-| **[HKUDS/Vibe-Trading](https://github.com/HKUDS/Vibe-Trading)** | 2,415 | 21,014 | Python |
-| **[rommapp/romm](https://github.com/rommapp/romm)** | 693 | 11,126 | Python |
-| **[browser-use/browser-use](https://github.com/browser-use/browser-use)** | 1,600 | 103,844 | Python |
-| **[hesreallyhim/awesome-claude-code](https://github.com/hesreallyhim/awesome-claude-code)** | 1,847 | 49,587 | Python |
+### [Evolution of Accuracy and Visual-Cognitive Errors in a Decade of Vision-Language AI Models](https://arxiv.org/abs/2607.09654v1)
+**Source:** arXiv · **Score:** 62/100
 
-*All projects are Python‑centric and show strong community momentum, indicating a continued shift toward AI‑augmented developer tooling.*
+This research introduces the Complex Social Behavior (CSB) dataset to evaluate Vision-Language Models (VLMs) on complex human interactions, contrasting with simpler benchmarks like MS-COCO. It demonstrates that Multimodal Large Language Models (MLLMs) have significantly improved VLM accuracy over the last decade, closing the performance gap between simple and complex scenes and nearly eliminating most visual-cognitive error types, except for spatial dependence. Detection, recognition, and hallucination errors were found to have the highest impact on scene description accuracy.
+
+> **Why it matters:** For AI and Data Engineers, this highlights the critical need for robust evaluation datasets beyond simple scenes to truly assess VLM capabilities and limitations in real-world, complex scenarios. Understanding specific error types like spatial dependence is crucial for debugging, fine-tuning, and building more reliable and human-aligned VLM applications, informing better data curation and model architecture choices.
+
+### [PHINN-EEG: Topological Time-Series Analysis of Dream-State EEG -- Dynamic Betti Curves for Dream Content Classification and Topology-Conditioned Neural Signal Synthesis](https://arxiv.org/abs/2607.09662v1)
+**Source:** arXiv · **Score:** 62/100
+
+PHINN-EEG introduces a novel topological time-series framework for dream-state EEG analysis, utilizing Dynamic Betti Curves to characterize neural activity geometry. This method aims to significantly improve dream content classification, targeting an AUC of 0.82-0.90, and includes a topology-conditioned flow model for EEG signal synthesis. It represents a paradigm shift from spectral energy to phase-space geometry in neural rare-event detection.
+
+> **Why it matters:** For AI and Data Engineers, this work introduces advanced Topological Data Analysis (TDA) techniques for time-series data, offering a new approach to feature engineering and signal processing beyond traditional spectral methods. It highlights the potential for novel neural network architectures conditioned on topological invariants, impacting how complex biological signals are modeled and synthesized.
+
+### [Mosaic: Runtime-Efficient Multi-Agent Embodied Planning](https://arxiv.org/abs/2607.09603v1)
+**Source:** arXiv · **Score:** 61/100
+
+Mosaic is a new framework that significantly improves the runtime efficiency of LLM-based multi-agent embodied planning by addressing high execution latency. It achieves this through agent-centric semantic memory for accurate state tracking and Integer Linear Programming for efficient, constraint-guided action coordination. The framework demonstrates substantial gains in execution speed, fewer LLM calls, and higher success rates in multi-agent tasks.
+
+> **Why it matters:** For AI and Data Engineers, Mosaic provides critical insights and methods for building more practical, resource-efficient, and scalable multi-agent systems by tackling core issues like execution latency and LLM call costs. Its approach to robust state tracking and constrained coordination is vital for deploying complex embodied AI applications effectively.
 
 ---
 
-## 🎯 Career Takeaways  
+## 🛠️ New Tools & Libraries
 
-1. **Design for persistence.** With agents like ChatGPT Work and shared memory architectures, you’ll be asked to build APIs that keep state across days and across users. Adopt versioned, immutable data stores (e.g., event‑sourced databases) early to avoid retrofitting later.  
+### [TrustX Agent Risk Classification Framework (ARC): Risk-Tiering Internally Created Agentic AI Systems](https://arxiv.org/abs/2607.09586v1)
+**Source:** arXiv · **Score:** 61/100
 
-2. **Prioritize token efficiency.** GPT‑5.6’s “intelligence per token” claim isn’t just marketing; lower token counts directly reduce cloud spend. Refactor prompts to use system messages, chain‑of‑thought compression, and retrieval‑augmented shortcuts wherever possible.  
+The TrustX Agent Risk Classification Framework (ARC) is introduced as a structured, repeatable instrument to classify and govern agentic AI systems. It utilizes a twelve-dimension scoring rubric, a GPA + IAT classification model, and a five-level autonomy framework to produce a three-tier governance output with control recommendations. The framework, including a specialized Coding Assistant extension, is designed for AI governance practitioners, risk officers, developers, and regulators to address the rapid proliferation of agentic AI.
 
-3. **Invest in profiling skills now.** The attention‑profiling guide shows that a few kernel‑level tweaks can yield 20 % latency gains. Make profiling a regular part of your CI pipeline—use `torch.profiler`, `nsight`, and automated regression alerts to keep performance debt in check.  
+> **Why it matters:** For AI and Data Engineers, this framework provides a crucial tool for systematically assessing and mitigating risks associated with the agentic AI systems they develop and deploy. Understanding ARC helps engineers integrate robust governance and safety considerations into their design, development, and MLOps pipelines, ensuring responsible innovation.
+
+### [A Sovereign, Open-Source Foundation Model for German and English](https://arxiv.org/abs/2607.09424v1)
+**Source:** arXiv · **Score:** 61/100
+
+We present Soofi S 30B-A3B, a sovereign, open-source Mixture-of-Experts (MoE) hybrid Mamba Transformer foundation model for German and English. Its hybrid design activates only 3B of 30B parameters per token and keeps the inference cache near-constant as context grows, giving it a decisive throughput advantage over dense models for long-context, high-concurrency deployment.
+
+> **Why it matters:** See the full article for details.
+
+### [Multimodal Scenario Similarity Search for Autonomous Driving](https://arxiv.org/abs/2607.09428v1)
+**Source:** arXiv · **Score:** 60/100
+
+This research introduces a multimodal framework for autonomous driving scenario retrieval, combining visual and trajectory-based representations to efficiently identify similar situations in large datasets. It investigates explicit matching (Exo-Trajectory) and transformer-based learning (ScenarioFormer) for trajectories, comparing them against vision baselines. The key finding is that while visual and trajectory representations have distinct strengths, their combination consistently yields the best overall retrieval performance.
+
+> **Why it matters:** For AI and Data Engineers, this work highlights the necessity of sophisticated data retrieval and management strategies for massive autonomous driving datasets. It emphasizes building multimodal data pipelines and models to improve data mining, dataset curation, and scenario-based validation, directly impacting the efficiency and quality of AD system development.
+
+### [ALICE: Learning a General-Purpose Pathology Foundation Model from Vision, Vision-Language, and Slide-Level Experts](https://arxiv.org/abs/2607.09526v1)
+**Source:** arXiv · **Score:** 60/100
+
+ALICE is a new unified foundation model for computational pathology, trained using multi-stage agglomerative distillation to consolidate capabilities from eight specialized vision-only, vision-language, and slide-level teacher models. Pretrained on millions of pathology images, ALICE demonstrated superior average performance across 21 task scenarios, 96 downstream tasks, and 48 data sources, outperforming other task-matched pathology foundation models. This approach successfully unifies diverse expertise into a single backbone for broad applications in pathology.
+
+> **Why it matters:** For AI/Data engineers, ALICE showcases an innovative model distillation technique that consolidates fragmented expertise from multiple specialized models into a single, efficient backbone, simplifying deployment and management of complex AI systems. This reduces the operational overhead of maintaining separate models for different modalities and scales, while also providing a powerful, general-purpose tool for medical imaging analysis.
 
 ---
 
-_Estimated reading time: 4 minutes_
+## 📈 Trending on GitHub
+
+### [Lordog/dive-into-llms](https://github.com/Lordog/dive-into-llms)
+**Jupyter Notebook** · ⭐ 42,757 · ↑ 701 this week
+
+《动手学大模型Dive into LLMs》系列编程实践教程
+
+### [anthropics/claude-code](https://github.com/anthropics/claude-code)
+**Python** · ⭐ 137,658 · ↑ 1,477 this week
+
+Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows - all through natural language commands.
+
+### [Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify)
+**Python** · ⭐ 83,726 · ↑ 5,419 this week
+
+AI coding assistant skill (Claude Code, Codex, OpenCode, Cursor, Gemini CLI, and more). Turn any folder of code, SQL schemas, R scripts, shell scripts, docs, papers, images, or videos into a queryable knowledge graph. App code + database schema + infrastructure in one graph.
+
+### [harvard-edge/cs249r_book](https://github.com/harvard-edge/cs249r_book)
+**Python** · ⭐ 27,432 · ↑ 673 this week
+
+Machine Learning Systems
+
+### [davila7/claude-code-templates](https://github.com/davila7/claude-code-templates)
+**Python** · ⭐ 29,350 · ↑ 754 this week
+
+CLI tool for configuring and monitoring Claude Code
+
+---
+
+## 🎯 Career Takeaways
+
+> AI Agents are heavily featured this week — if you're not familiar with tool calling and agent orchestration frameworks (LangGraph, MCP), now is the time.
+> RAG systems are maturing — the gap between basic similarity search and production-grade retrieval is widening. Focus on reranking and evaluation.
+> Multiple LLM releases this week. Track benchmarks critically — marketing numbers and real-world performance often diverge.
+
+---
+
+_Estimated reading time: 17 minutes_
