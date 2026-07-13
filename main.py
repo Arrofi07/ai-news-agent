@@ -62,10 +62,6 @@ def main() -> None:
 
     # ── Phase 5: Newsletter ─────────────────────────────────────────────
     logger.info("--- PHASE 5: NEWSLETTER ---")
-    llm_client = None
-    if config.llm.api_key:
-        from llm.gemini import GeminiClient
-        llm_client = GeminiClient(config.llm.api_key, config.llm.model)
     # Deliberately reuse whichever client survived Phase 4 rather than
     # constructing a fresh Gemini-only client here: if Gemini got rate
     # limited mid-run and the chain switched to Groq, the newsletter's
